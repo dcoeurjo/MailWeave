@@ -14,6 +14,16 @@
 		1A0000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A000000A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		7192A9D82F42592900A401CB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 71C15D4C2F41FEE300333D15 /* Mailloom.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 1A000000D;
+			remoteInfo = MailLoom;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		1A0000002 /* MailLoomApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailLoomApp.swift; sourceTree = "<group>"; };
 		1A0000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -44,6 +54,7 @@
 				1A0000011 /* Mailloom */,
 				71C15D482F41F29D00333D15 /* README.md */,
 				1A0000012 /* Products */,
+				7192A9DA2F425A3300A401CB /* Preview Content */,
 			);
 			sourceTree = "<group>";
 		};
@@ -76,17 +87,27 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
+		7192A9DA2F425A3300A401CB /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
 		71C15D4D2F41FEE300333D15 /* Products */ = {
 			isa = PBXGroup;
+			children = (
+				7192A9D92F42592900A401CB,
+			);
 			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1A0000014 /* Mailloom */ = {
+		1A0000014 /* MailLoom */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1A0000015 /* Build configuration list for PBXNativeTarget "Mailloom" */;
+			buildConfigurationList = 1A0000015 /* Build configuration list for PBXNativeTarget "MailLoom" */;
 			buildPhases = (
 				1A0000016 /* Sources */,
 				1A000000F /* Frameworks */,
@@ -116,7 +137,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 1A0000019 /* Build configuration list for PBXProject "Mailloom" */;
+			buildConfigurationList = 1A0000019 /* Build configuration list for PBXProject "MailLoom" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -135,10 +156,17 @@
 			);
 			projectRoot = "";
 			targets = (
-				1A0000014 /* Mailloom */,
+				1A0000014 /* MailLoom */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		7192A9D92F42592900A401CB = {
+			isa = PBXReferenceProxy;
+			remoteRef = 7192A9D82F42592900A401CB /* PBXContainerItemProxy */;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		1A0000017 /* Resources */ = {
@@ -294,7 +322,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"Mailloom/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"MailLoom/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = MailLoom;
@@ -322,7 +350,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"Mailloom/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"MailLoom/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = MailLoom;
@@ -343,7 +371,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1A0000015 /* Build configuration list for PBXNativeTarget "Mailloom" */ = {
+		1A0000015 /* Build configuration list for PBXNativeTarget "MailLoom" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1A000001C /* Debug */,
@@ -352,7 +380,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1A0000019 /* Build configuration list for PBXProject "Mailloom" */ = {
+		1A0000019 /* Build configuration list for PBXProject "MailLoom" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1A000001A /* Debug */,

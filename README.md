@@ -1,3 +1,4 @@
+![](icon.png)
 # MailLoom
 
 MailLoom is a macOS application for creating personalized Mail.app drafts from a CSV file. Import recipient data, review parsed headers and counts, customize subject/CC/message, and generate drafts efficiently.
