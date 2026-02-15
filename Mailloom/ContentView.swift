@@ -53,7 +53,7 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 20) {
             // Header
-            Text("Email Sender")
+            Text("Mailloom")
                 .font(.largeTitle)
                 .bold()
                 .padding(.top)
@@ -83,8 +83,8 @@ struct ContentView: View {
             
             Spacer()
         }
-        .frame(width: 700, height: 600)
-        .alert("Email Sender", isPresented: $showAlert) {
+        .frame(width: flowStep == .composeStep ? 900 : 700, height: flowStep == .composeStep ? 720 : 400)
+        .alert("Mailloom", isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(alertMessage)
@@ -130,7 +130,7 @@ struct ContentView: View {
                     defaultMessage = firstMessage
                 }
                 alertMessage = "Successfully imported \(recipients.count) recipients"
-                showAlert = true
+                showAlert = false
             }
         } catch {
             alertMessage = "Error importing file: \(error.localizedDescription)"
@@ -152,7 +152,7 @@ struct ContentView: View {
             let successCount = results.filter { $0 }.count
             let failureCount = results.count - successCount
             
-            if failureCount == 0 {
+            if failureCount != 0 {
                 self.alertMessage = "Successfully created \(successCount) emails in Mail.app"
             } else {
                 self.alertMessage = "Created \(successCount) emails. Failed: \(failureCount)"
@@ -227,16 +227,16 @@ private struct ImportView: View {
             }
             .padding(.horizontal)
             
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text("Import Summary")
-                    .font(.headline)
+                    .font(.title2)
+                    .bold()
                 Text("Parsed headers: \(parsedHeaders.isEmpty ? "-" : parsedHeaders.joined(separator: ", "))")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                    .font(.title3)
                 Text("Entries parsed: \(recipientsCount)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                    .font(.title3)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal)
             
             Button(action: onProceed) {
@@ -263,6 +263,7 @@ private struct ComposeView: View {
     @Binding var ccList: String
     let onBack: () -> Void
     let onSend: () -> Void
+    @State private var useDefaultMessage = false
     
     var body: some View {
         ScrollView {
@@ -292,21 +293,30 @@ private struct ComposeView: View {
                 
                 // Default Message Editor
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Default Message Template:")
+                    Toggle("Use default message template (and override per-recipient {{message}} if any)", isOn: $useDefaultMessage)
                         .font(.headline)
-                    
-                    TextEditor(text: $defaultMessage)
-                        .frame(height: 140)
-                        .border(Color.gray.opacity(0.5))
-                        .onChange(of: defaultMessage) { newValue in
-                            for index in recipients.indices {
-                                recipients[index].message = newValue
+                        .onChange(of: useDefaultMessage) { isEnabled in
+                            if isEnabled {
+                                applyDefaultMessage()
                             }
                         }
-                    
-                    Text("Use {{header}} placeholders like {{name}} in the message")
-                        .font(.caption)
-                        .foregroundColor(.gray)
+
+                    if useDefaultMessage {
+                        Text("Warning: This will override any per row {{message}} value if present.")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+
+                        TextEditor(text: $defaultMessage)
+                            .frame(height: 140)
+                            .border(Color.gray.opacity(0.5))
+                            .onChange(of: defaultMessage) { _ in
+                                applyDefaultMessage()
+                            }
+
+                        Text("Use {{header}} placeholders like {{name}} in the message")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
                 }
                 .padding(.horizontal)
                 
@@ -343,6 +353,12 @@ private struct ComposeView: View {
                 .padding(.horizontal)
             }
             .padding(.bottom)
+        }
+    }
+
+    private func applyDefaultMessage() {
+        for index in recipients.indices {
+            recipients[index].message = defaultMessage
         }
     }
 }

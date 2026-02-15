@@ -1,6 +1,6 @@
-# SendCraft
+# Mailloom
 
-SendCraft is a macOS application for creating personalized Mail.app drafts from a CSV file. Import recipient data, review parsed headers and counts, customize subject/CC/message, and generate drafts efficiently.
+Mailloom is a macOS application for creating personalized Mail.app drafts from a CSV file. Import recipient data, review parsed headers and counts, customize subject/CC/message, and generate drafts efficiently.
 
 ## Features
 
@@ -26,7 +26,7 @@ SendCraft is a macOS application for creating personalized Mail.app drafts from 
 ## Usage
 
 1. **Prepare your CSV file** with a header row. Required columns are `name`, `email`, and `message`.
-2. **Import the CSV** in SendCraft and choose the correct delimiter.
+2. **Import the CSV** in Mailloom and choose the correct delimiter.
 3. **Review import stats** (parsed headers + entry count) and click **Proceed**.
 4. **Customize** the subject, CC list, and message template. Use placeholders like `{{name}}` or any header.
 5. **Review recipients** and select who to send.

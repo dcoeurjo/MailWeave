@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "1A0000014"
-               BuildableName = "EmailSender.app"
-               BlueprintName = "EmailSender"
+               BuildableName = "Mailloom.app"
+               BlueprintName = "Mailloom"
                ReferencedContainer = "container:EmailSender.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -44,8 +44,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "1A0000014"
-            BuildableName = "EmailSender.app"
-            BlueprintName = "EmailSender"
+            BuildableName = "Mailloom.app"
+            BlueprintName = "Mailloom"
             ReferencedContainer = "container:EmailSender.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -61,8 +61,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "1A0000014"
-            BuildableName = "EmailSender.app"
-            BlueprintName = "EmailSender"
+            BuildableName = "Mailloom.app"
+            BlueprintName = "Mailloom"
             ReferencedContainer = "container:EmailSender.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
