@@ -16,13 +16,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		1A000000D /* EmailSender.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EmailSender.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A0000002 /* EmailSenderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSenderApp.swift; sourceTree = "<group>"; };
 		1A0000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1A0000006 /* EmailService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailService.swift; sourceTree = "<group>"; };
 		1A0000008 /* SpreadsheetParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpreadsheetParser.swift; sourceTree = "<group>"; };
 		1A000000A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1A000000C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		1A000000D /* EmailSender.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EmailSender.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A000000E /* EmailSender.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = EmailSender.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -326,20 +326,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1A0000019 /* Build configuration list for PBXProject "EmailSender" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				1A000001A /* Debug */,
-				1A000001B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		1A0000015 /* Build configuration list for PBXNativeTarget "EmailSender" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1A000001C /* Debug */,
 				1A000001D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1A0000019 /* Build configuration list for PBXProject "EmailSender" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A000001A /* Debug */,
+				1A000001B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

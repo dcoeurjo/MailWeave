@@ -6,15 +6,49 @@ struct Recipient: Identifiable, Codable {
     var name: String
     var email: String
     var message: String
+    var fields: [String: String]
     var selected: Bool = true
 }
 
+private enum DelimiterOption: String, CaseIterable, Identifiable {
+    case comma = ","
+    case semicolon = ";"
+    case tab = "Tab"
+    case custom = "Custom"
+    
+    var id: String { rawValue }
+    
+    var label: String {
+        switch self {
+        case .comma:
+            return "Comma (,)"
+        case .semicolon:
+            return "Semicolon (;)"
+        case .tab:
+            return "Tab (\t)"
+        case .custom:
+            return "Custom"
+        }
+    }
+}
+
 struct ContentView: View {
+    private enum FlowStep {
+        case importStep
+        case composeStep
+    }
+    
     @State private var recipients: [Recipient] = []
     @State private var defaultMessage: String = ""
+    @State private var emailSubject: String = "Message for {{name}}"
+    @State private var ccList: String = ""
     @State private var isImporting = false
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var delimiterOption: DelimiterOption = .comma
+    @State private var customDelimiter: String = ""
+    @State private var parsedHeaders: [String] = []
+    @State private var flowStep: FlowStep = .importStep
     
     var body: some View {
         VStack(spacing: 20) {
@@ -24,91 +58,27 @@ struct ContentView: View {
                 .bold()
                 .padding(.top)
             
-            // Import Button
-            Button(action: {
-                isImporting = true
-            }) {
-                HStack {
-                    Image(systemName: "doc.text")
-                    Text("Import Spreadsheet (CSV)")
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(8)
-            }
-            .fileImporter(
-                isPresented: $isImporting,
-                allowedContentTypes: [.commaSeparatedText, .text],
-                allowsMultipleSelection: false
-            ) { result in
-                handleFileImport(result)
-            }
-            .padding(.horizontal)
-            
-            if !recipients.isEmpty {
-                // Default Message Editor
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Default Message Template:")
-                        .font(.headline)
-                    
-                    TextEditor(text: $defaultMessage)
-                        .frame(height: 100)
-                        .border(Color.gray.opacity(0.5))
-                        .onChange(of: defaultMessage) { newValue in
-                            updateAllMessages(newValue)
-                        }
-                    
-                    Text("Use {{name}} as a placeholder for the recipient's name")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
-                .padding(.horizontal)
-                
-                // Recipients List
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Recipients (\(recipients.filter { $0.selected }.count) selected):")
-                        .font(.headline)
-                    
-                    ScrollView {
-                        VStack(spacing: 10) {
-                            ForEach($recipients) { $recipient in
-                                RecipientRow(recipient: $recipient)
-                            }
-                        }
+            if flowStep == .importStep {
+                ImportView(
+                    isImporting: $isImporting,
+                    delimiterOption: $delimiterOption,
+                    customDelimiter: $customDelimiter,
+                    parsedHeaders: parsedHeaders,
+                    recipientsCount: recipients.count,
+                    onImport: handleFileImport,
+                    onProceed: {
+                        flowStep = .composeStep
                     }
-                    .frame(maxHeight: 300)
-                    .border(Color.gray.opacity(0.3))
-                }
-                .padding(.horizontal)
-                
-                // Send Button
-                Button(action: sendEmails) {
-                    HStack {
-                        Image(systemName: "envelope")
-                        Text("Send Emails (\(recipients.filter { $0.selected }.count))")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-                }
-                .disabled(recipients.filter { $0.selected }.isEmpty)
-                .padding(.horizontal)
+                )
             } else {
-                Spacer()
-                
-                Text("Import a CSV file to get started")
-                    .font(.title3)
-                    .foregroundColor(.gray)
-                
-                Text("CSV format: name,email,message")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                
-                Spacer()
+                ComposeView(
+                    recipients: $recipients,
+                    defaultMessage: $defaultMessage,
+                    emailSubject: $emailSubject,
+                    ccList: $ccList,
+                    onBack: { flowStep = .importStep },
+                    onSend: sendEmails
+                )
             }
             
             Spacer()
@@ -134,8 +104,22 @@ struct ContentView: View {
             
             defer { selectedFile.stopAccessingSecurityScopedResource() }
             
+            guard let delimiter = selectedDelimiter() else {
+                alertMessage = "Please enter a single delimiter character"
+                showAlert = true
+                return
+            }
+            
             let parser = SpreadsheetParser()
-            recipients = parser.parseCSV(from: selectedFile)
+            let parseResult = parser.parseCSV(from: selectedFile, delimiter: delimiter)
+            recipients = parseResult.recipients
+            parsedHeaders = parseResult.headers
+            
+            if let errorMessage = parseResult.errorMessage {
+                alertMessage = errorMessage
+                showAlert = true
+                return
+            }
             
             if recipients.isEmpty {
                 alertMessage = "No valid recipients found in the file"
@@ -154,12 +138,6 @@ struct ContentView: View {
         }
     }
     
-    func updateAllMessages(_ newMessage: String) {
-        for index in recipients.indices {
-            recipients[index].message = newMessage
-        }
-    }
-    
     func sendEmails() {
         let selectedRecipients = recipients.filter { $0.selected }
         
@@ -170,7 +148,7 @@ struct ContentView: View {
         }
         
         let emailService = EmailService()
-        emailService.sendEmails(to: selectedRecipients) { results in
+        emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList) { results in
             let successCount = results.filter { $0 }.count
             let failureCount = results.count - successCount
             
@@ -180,6 +158,191 @@ struct ContentView: View {
                 self.alertMessage = "Created \(successCount) emails. Failed: \(failureCount)"
             }
             self.showAlert = true
+        }
+    }
+    
+    private func selectedDelimiter() -> Character? {
+        switch delimiterOption {
+        case .comma:
+            return ","
+        case .semicolon:
+            return ";"
+        case .tab:
+            return "\t"
+        case .custom:
+            let trimmed = customDelimiter.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmed.count == 1, let char = trimmed.first else {
+                return nil
+            }
+            return char
+        }
+    }
+}
+
+private struct ImportView: View {
+    @Binding var isImporting: Bool
+    @Binding var delimiterOption: DelimiterOption
+    @Binding var customDelimiter: String
+    let parsedHeaders: [String]
+    let recipientsCount: Int
+    let onImport: (Result<[URL], Error>) -> Void
+    let onProceed: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Button(action: { isImporting = true }) {
+                HStack {
+                    Image(systemName: "doc.text")
+                    Text("Import Spreadsheet (CSV)")
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+            }
+            .fileImporter(
+                isPresented: $isImporting,
+                allowedContentTypes: [.commaSeparatedText, .text],
+                allowsMultipleSelection: false
+            ) { result in
+                onImport(result)
+            }
+            .padding(.horizontal)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("CSV Delimiter")
+                    .font(.headline)
+                Picker("Delimiter", selection: $delimiterOption) {
+                    ForEach(DelimiterOption.allCases) { option in
+                        Text(option.label).tag(option)
+                    }
+                }
+                .pickerStyle(.segmented)
+                
+                if delimiterOption == .custom {
+                    TextField("Enter a single delimiter character", text: $customDelimiter)
+                        .textFieldStyle(.roundedBorder)
+                }
+            }
+            .padding(.horizontal)
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Import Summary")
+                    .font(.headline)
+                Text("Parsed headers: \(parsedHeaders.isEmpty ? "-" : parsedHeaders.joined(separator: ", "))")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                Text("Entries parsed: \(recipientsCount)")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+            .padding(.horizontal)
+            
+            Button(action: onProceed) {
+                HStack {
+                    Image(systemName: "arrow.right")
+                    Text("Proceed")
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(recipientsCount == 0 ? Color.gray : Color.green)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+            }
+            .disabled(recipientsCount == 0)
+            .padding(.horizontal)
+        }
+    }
+}
+
+private struct ComposeView: View {
+    @Binding var recipients: [Recipient]
+    @Binding var defaultMessage: String
+    @Binding var emailSubject: String
+    @Binding var ccList: String
+    let onBack: () -> Void
+    let onSend: () -> Void
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                HStack {
+                    Button(action: onBack) {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Email Subject")
+                        .font(.headline)
+                    TextField("Subject", text: $emailSubject)
+                        .textFieldStyle(.roundedBorder)
+                    Text("CC (comma-separated)")
+                        .font(.headline)
+                    TextField("email@example.com, email2@example.com", text: $ccList)
+                        .textFieldStyle(.roundedBorder)
+                }
+                .padding(.horizontal)
+                
+                // Default Message Editor
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Default Message Template:")
+                        .font(.headline)
+                    
+                    TextEditor(text: $defaultMessage)
+                        .frame(height: 140)
+                        .border(Color.gray.opacity(0.5))
+                        .onChange(of: defaultMessage) { newValue in
+                            for index in recipients.indices {
+                                recipients[index].message = newValue
+                            }
+                        }
+                    
+                    Text("Use {{header}} placeholders like {{name}} in the message")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                .padding(.horizontal)
+                
+                // Recipients List
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Recipients (\(recipients.filter { $0.selected }.count) selected):")
+                        .font(.headline)
+                    
+                    ScrollView {
+                        VStack(spacing: 10) {
+                            ForEach($recipients) { $recipient in
+                                RecipientRow(recipient: $recipient)
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 200)
+                    .border(Color.gray.opacity(0.3))
+                }
+                .padding(.horizontal)
+                
+                // Send Button
+                Button(action: onSend) {
+                    HStack {
+                        Image(systemName: "envelope")
+                        Text("Send Emails (\(recipients.filter { $0.selected }.count))")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                }
+                .disabled(recipients.filter { $0.selected }.isEmpty)
+                .padding(.horizontal)
+            }
+            .padding(.bottom)
         }
     }
 }
