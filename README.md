@@ -1,13 +1,14 @@
-# publiMacOS - Email Sender App
+# SendCraft
 
-A macOS application for sending personalized emails to multiple recipients using Mail.app. Import recipient data from a CSV spreadsheet, customize messages, and send emails efficiently.
+SendCraft is a macOS application for creating personalized Mail.app drafts from a CSV file. Import recipient data, review parsed headers and counts, customize subject/CC/message, and generate drafts efficiently.
 
 ## Features
 
-- **CSV Import**: Import recipient data from CSV files
-- **Message Personalization**: Use `{{name}}` placeholder to personalize messages
-- **Individual Message Editing**: Customize messages for each recipient
-- **Selective Sending**: Choose which recipients to send emails to
+- **CSV Import**: Import recipient data from CSV files with a selectable delimiter
+- **Header-Based Parsing**: Columns can be in any order as long as `name`, `email`, and `message` are present
+- **Message Personalization**: Use `{{header}}` placeholders (e.g., `{{name}}`, `{{blop}}`)
+- **Subject + CC**: Global subject and CC list with placeholder support
+- **Two-Step Flow**: Import + stats first, compose and review recipients second
 - **Mail.app Integration**: Creates draft emails in Mail.app for review before sending
 
 ## Requirements
@@ -19,78 +20,54 @@ A macOS application for sending personalized emails to multiple recipients using
 
 ## Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/dcoeurjo/publiMacOS.git
-   cd publiMacOS
-   ```
-
-2. Open the project in Xcode:
-   ```bash
-   open EmailSender.xcodeproj
-   ```
-
-3. Build and run the project (⌘R)
+1. Open the project in Xcode.
+2. Build and run the project (⌘R).
 
 ## Usage
 
-1. **Prepare your CSV file** with the following format:
-   ```csv
-   name,email,message
-   John Doe,john.doe@example.com,"Dear {{name}}, This is your message."
-   Jane Smith,jane.smith@example.com,"Hi {{name}}, Hope you're well."
-   ```
-
-2. **Launch the app** and click "Import Spreadsheet (CSV)"
-
-3. **Select your CSV file** containing recipient data
-
-4. **Edit the default message** if needed (use `{{name}}` as a placeholder)
-
-5. **Review recipients** - expand individual entries to customize their messages
-
-6. **Select recipients** using checkboxes
-
-7. **Click "Send Emails"** - the app will create draft emails in Mail.app
+1. **Prepare your CSV file** with a header row. Required columns are `name`, `email`, and `message`.
+2. **Import the CSV** in SendCraft and choose the correct delimiter.
+3. **Review import stats** (parsed headers + entry count) and click **Proceed**.
+4. **Customize** the subject, CC list, and message template. Use placeholders like `{{name}}` or any header.
+5. **Review recipients** and select who to send.
+6. **Send emails** to create Mail.app drafts.
 
 ## CSV Format
 
-The CSV file should have three columns:
-- `name`: Recipient's name (required)
-- `email`: Recipient's email address (required)
-- `message`: Custom message for the recipient (optional)
+- The first row must be a header row.
+- Required headers: `name`, `email`, `message`
+- Additional headers are supported and can be referenced in the message template.
 
-The first row should be a header row with column names.
+Example:
+
+```csv
+name,email,company,message
+John Doe,john.doe@example.com,Acme,Hello {{name}} from {{company}}!
+```
 
 ## Message Personalization
 
-Use the `{{name}}` placeholder in your message template, and it will be automatically replaced with each recipient's name when creating the emails.
+You can use any header name as a placeholder in the subject, CC, or message body.
 
 Example:
+
 ```
-Dear {{name}},
+Hi {{name}},
 
-I hope this message finds you well...
+Thanks for your work at {{company}}.
 ```
-
-## Sample Data
-
-A sample CSV file (`sample_recipients.csv`) is included in the repository for testing.
 
 ## Architecture
 
-The app is built with SwiftUI and consists of:
-- **EmailSenderApp.swift**: Main app entry point
-- **ContentView.swift**: User interface with recipient list and message editor
-- **SpreadsheetParser.swift**: CSV file parsing logic
+- **EmailSenderApp.swift**: App entry point
+- **ContentView.swift**: Two-step UI flow (import + compose)
+- **SpreadsheetParser.swift**: CSV parsing and header mapping
 - **EmailService.swift**: Mail.app integration using mailto URLs
 
 ## Security
 
 The app uses App Sandbox with the following capabilities:
+
 - Read-only access to user-selected files
 - Network client access (for mailto URLs)
 
-## License
-
-This project is open source and available under standard terms.

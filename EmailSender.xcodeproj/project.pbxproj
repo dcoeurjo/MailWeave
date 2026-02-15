@@ -12,7 +12,6 @@
 		1A0000005 /* EmailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000006 /* EmailService.swift */; };
 		1A0000007 /* SpreadsheetParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000008 /* SpreadsheetParser.swift */; };
 		1A0000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A000000A /* Assets.xcassets */; };
-		1A000000B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A000000C /* Preview Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,9 +20,9 @@
 		1A0000006 /* EmailService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailService.swift; sourceTree = "<group>"; };
 		1A0000008 /* SpreadsheetParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpreadsheetParser.swift; sourceTree = "<group>"; };
 		1A000000A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		1A000000C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		1A000000D /* EmailSender.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EmailSender.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A000000E /* EmailSender.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = EmailSender.entitlements; sourceTree = "<group>"; };
+		71C15D482F41F29D00333D15 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +40,7 @@
 			isa = PBXGroup;
 			children = (
 				1A0000011 /* EmailSender */,
+				71C15D482F41F29D00333D15 /* README.md */,
 				1A0000012 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -70,7 +70,6 @@
 		1A0000013 /* Preview Content */ = {
 			isa = PBXGroup;
 			children = (
-				1A000000C /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
 			sourceTree = "<group>";
@@ -133,7 +132,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1A000000B /* Preview Assets.xcassets in Resources */,
 				1A0000009 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
