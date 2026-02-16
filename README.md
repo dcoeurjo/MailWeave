@@ -1,12 +1,19 @@
 ![](icon.png)
 # MailLoom
 
-MailLoom is a macOS application for creating personalized Mail.app drafts from a CSV file. Import recipient data, review parsed headers and counts, customize subject/CC/message, and generate drafts efficiently.
+MailLoom is a simple macOS application for creating personalized Mail.app drafts from a CSV file. Basic usage is a CSV file with recipents, for example
+```csv
+name,email,company,message
+Jane Doe,jane.doe@example.com,Acme,Hello {{name}} from {{company}}, Greetings!
+John Doe,john.doe@example.com,Acme,Hello {{name}} from {{company}} !
+```
+and the app generates draft emails you can double check, replacing the placeholder but the associated values.
 
+![](snapshot.png)
 ## Features
 
 - **CSV Import**: Import recipient data from CSV files with a selectable delimiter
-- **Header-Based Parsing**: Columns can be in any order as long as `name`, `email`, and `message` are present
+- **Header-Based Parsing**: Columns can be in any order as long as `name`, `email`, and `message` are present. Extra headers can be used in the email templates.
 - **Message Personalization**: Use `{{header}}` placeholders (e.g., `{{name}}`, `{{blop}}`)
 - **Subject + CC**: Global subject and CC list with placeholder support
 - **Two-Step Flow**: Import + stats first, compose and review recipients second
@@ -16,7 +23,7 @@ MailLoom is a macOS application for creating personalized Mail.app drafts from a
 
 - macOS 13.0 or later
 - Xcode 15.0 or later
-- Swift 5.0
+- Swift 5.0 
 - Mail.app configured with an email account
 
 ## Installation
@@ -39,12 +46,7 @@ MailLoom is a macOS application for creating personalized Mail.app drafts from a
 - Required headers: `name`, `email`, `message`
 - Additional headers are supported and can be referenced in the message template.
 
-Example:
-
-```csv
-name,email,company,message
-John Doe,john.doe@example.com,Acme,Hello {{name}} from {{company}}!
-```
+See example in `sample_recipients.csv`
 
 ## Message Personalization
 

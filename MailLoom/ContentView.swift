@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import AppKit
 
 struct Recipient: Identifiable, Codable {
     let id = UUID()
@@ -53,10 +54,17 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 20) {
             // Header
-            Text("MailLoom")
-                .font(.largeTitle)
-                .bold()
-                .padding(.top)
+            HStack(spacing: 12) {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 36, height: 36)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                Text("MailLoom")
+                    .font(.largeTitle)
+                    .bold()
+            }
+            .padding(.top)
             
             if flowStep == .importStep {
                 ImportView(
@@ -233,7 +241,7 @@ private struct ImportView: View {
                     .bold()
                 Text("Parsed headers: \(parsedHeaders.isEmpty ? "-" : parsedHeaders.joined(separator: ", "))")
                     .font(.title3)
-                Text("Entries parsed: \(recipientsCount)")
+                Text("Number of entries parsed: \(recipientsCount)")
                     .font(.title3)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
