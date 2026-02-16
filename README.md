@@ -1,4 +1,4 @@
-![](icon.png)
+![](icon-small.png)
 # MailLoom
 
 MailLoom is a simple macOS application for creating personalized Mail.app drafts from a CSV file. Basic usage is a CSV file with recipents, for example
