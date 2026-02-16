@@ -1,15 +1,19 @@
 ![](icon-small.png)
 # MailLoom
 
-MailLoom is a simple macOS application for creating personalized Mail.app drafts from a CSV file. Basic usage is a CSV file with recipents, for example
+MailLoom is a simple macOS app that lets you create personalized email drafts in Mail.app using a CSV file. For example, your CSV might look like this:
 ```csv
 name,email,company,message
 Jane Doe,jane.doe@example.com,Acme,Hello {{name}} from {{company}}, Greetings!
 John Doe,john.doe@example.com,Acme,Hello {{name}} from {{company}} !
 ```
-and the app generates draft emails you can double-check before sending, replacing the placeholder but the associated values.
+
+MailLoom generates draft emails with the placeholders replaced by the corresponding values, so you can review them before sending.
 
 ![](snapshot.png)
+
+
+
 ## Features
 
 - **CSV Import**: Import recipient data from CSV files with a selectable delimiter
