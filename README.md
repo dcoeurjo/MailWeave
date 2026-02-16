@@ -76,4 +76,4 @@ David Coeurjolly (david.coeurjolly@cnrs.fr)
 
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0).
 
-See [LICENSE](LICENSE) for more information.
+See [LICENSE.md](LICENSE.md) for more information.
