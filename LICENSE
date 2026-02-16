@@ -1,15 +1,7 @@
-GNU GENERAL PUBLIC LICENSE
-Version 3, 29 June 2007
-
-Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
-Everyone is permitted to copy and distribute verbatim copies
-of this license document, but changing it is not allowed.
-
-Preamble
-The GNU General Public License is a free, copyleft license for
-software and other kinds of works.
-...
-
-(Full license details omitted for brevity)
-
-(You can find the full text at https://www.gnu.org/licenses/gpl-3.0.txt)
+GNU GENERAL PUBLIC LICENSE\nVersion 3, 29 June 2007\n\nCopyright (C) 2026 David Coeurjolly\nEveryone is permitted to copy and distribute verbatim copies\nof this license document, but changing it is not allowed.\n\n\nPreamble\n\nThe GNU General Public License is a free, copyleft license for software and other kinds of works.  This version of the License, the GNU General Public License version 3, is intended to guarantee your freedom to share and change all versions of a program--to make sure it remains free software for all its users.  This General Public License applies to all software that is released by the Free Software Foundation (FSF) or by authors who wish to use it.  It guarantees your freedom to run, study, share and modify the software.
+\n0. Definitions\n\nThis License refers to version 3 of the GNU General Public License.\n\n"The Program" refers to any copyrightable work licensed under this License.\n"You" indicates the licensee, or user of the Program.\n"The Author" refers to the individual or organization that offers the Program under the terms of this License.\n"The Source Code" for a work means the preferred form of the work for making modifications to it.\n"Object Code" means any non-source form of a work.\n"The work " means the Program and any modified version of it.\n"Copy" means every time you transfer a copy of the Program or a work, whether in physical or electronic form.\n
+1. Source Code\n\nYou may not copy, modify, sublicense, or distribute the Program except as expressly provided under this License.\nThe Program must be made available in Source Code form, and there's a copy of this License included whenever you make a copy of the Program, or you provide any other works based on it.\n
+2. Basic Permissions\n\nYou can copy, modify, distribute, and sublicense the Program, provided that you keep the same License provisions with each copy or modification made of this Program.\n
+3. Copyleft\n\nYou can distribute modifications under the same terms as this License.\nIf you distribute the Program in object code format, you must make available the Source Code for the Program under the same License.\n
+4. Freeware License\n\nUnless you specify otherwise, you must obtain a compatible license to copy, distribute or modify this program.\nAs you have licensed every output based on this work under the same terms, you automatically extend that license to anyone who receives a copy of your contribution.\n
+5. Infringements\n\nThe Modified version of the Program must accept the copyright and License provisions based on the GNU GPL v3 in order to remain releasable.
