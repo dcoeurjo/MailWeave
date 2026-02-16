@@ -1,5 +1,7 @@
 # MailLoom
 ![](icon-small.png)
+
+
 [![Xcode - Build and Analyze](https://github.com/dcoeurjo/MailLoom/actions/workflows/objective-c-xcode.yml/badge.svg)](https://github.com/dcoeurjo/MailLoom/actions/workflows/objective-c-xcode.yml)
 
 MailLoom is a simple macOS app that lets you create personalized email drafts in Mail.app using a CSV file. For example, your CSV might look like this:
