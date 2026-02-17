@@ -19,7 +19,7 @@ MailLoom generates draft emails with the placeholders replaced by the correspond
 
 ## Features
 
-- **CSV Import**: Import recipient data from CSV files with a selectable delimiter
+- **CSV Import**: Import recipient data from CSV files with a selectable delimiter. CSV Cells may include multiline text
 - **Header-Based Parsing**: Columns can be in any order as long as `name`, `email`, and `message` are present. Extra headers can be used as keys in the email template
 - **Message Personalization**: Use `{{header}}` placeholders (e.g., `{{name}}`, `{{blop}}`)
 - **Global message**: You can use the same messge template for all recipients
