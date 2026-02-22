@@ -32,6 +32,7 @@
 		1A000000A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1A000000D /* MailLoom.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MailLoom.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A000000E /* Mailloom.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Mailloom.entitlements; sourceTree = "<group>"; };
+		71BEA5142F4B371900825E5D /* Changelog.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Changelog.md; sourceTree = "<group>"; };
 		71C15D482F41F29D00333D15 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		71C15D4C2F41FEE300333D15 /* Mailloom.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Mailloom.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -53,6 +54,7 @@
 				71C15D4C2F41FEE300333D15 /* Mailloom.xcodeproj */,
 				1A0000011 /* Mailloom */,
 				71C15D482F41F29D00333D15 /* README.md */,
+				71BEA5142F4B371900825E5D /* Changelog.md */,
 				1A0000012 /* Products */,
 				7192A9DA2F425A3300A401CB /* Preview Content */,
 			);

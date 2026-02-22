@@ -2,14 +2,14 @@ import Foundation
 
 class SpreadsheetParser {
     struct ParseResult {
-        let recipients: [Recipient]
         let headers: [String]
+        let rows: [[String: String]]
         let errorMessage: String?
     }
     
     func parseCSV(from url: URL, delimiter: Character) -> ParseResult {
-        var recipients: [Recipient] = []
         var parsedHeaders: [String] = []
+        var rows: [[String: String]] = []
         
         do {
             let content = try String(contentsOf: url, encoding: .utf8)
@@ -20,19 +20,11 @@ class SpreadsheetParser {
             let resolvedDelimiter = resolveDelimiter(preferred: delimiter, in: lines)
             
             guard let headerLine = lines.first else {
-                return ParseResult(recipients: [], headers: [], errorMessage: "The CSV file is empty")
+                return ParseResult(headers: [], rows: [], errorMessage: "The CSV file is empty")
             }
             
             let headers = parseCSVLine(headerLine, delimiter: resolvedDelimiter)
             parsedHeaders = headers.map { normalizeHeader($0) }.filter { !$0.isEmpty }
-            let headerIndices = buildHeaderIndexMap(from: headers)
-            let requiredHeaders = ["name", "email", "message"]
-            let missingHeaders = requiredHeaders.filter { headerIndices[$0] == nil }
-            
-            if !missingHeaders.isEmpty {
-                let missingList = missingHeaders.joined(separator: ", ")
-                return ParseResult(recipients: [], headers: parsedHeaders, errorMessage: "Missing required columns: \(missingList)")
-            }
             
             let dataLines = lines.dropFirst()
             
@@ -44,30 +36,16 @@ class SpreadsheetParser {
                 
                 let components = parseCSVLine(line, delimiter: resolvedDelimiter)
                 let fields = buildFieldMap(headers: headers, components: components)
-                
-                guard let nameIndex = headerIndices["name"],
-                      let emailIndex = headerIndices["email"],
-                      let messageIndex = headerIndices["message"] else {
+                if fields.isEmpty {
                     continue
                 }
-                
-                let name = componentValue(at: nameIndex, in: components)
-                let email = componentValue(at: emailIndex, in: components)
-                let message = componentValue(at: messageIndex, in: components)
-                
-                // Skip if name or email is empty
-                guard !name.isEmpty && !email.isEmpty else {
-                    continue
-                }
-                
-                let recipient = Recipient(name: name, email: email, message: message, fields: fields)
-                recipients.append(recipient)
+                rows.append(fields)
             }
         } catch {
-            return ParseResult(recipients: [], headers: parsedHeaders, errorMessage: "Error reading CSV file: \(error.localizedDescription)")
+            return ParseResult(headers: parsedHeaders, rows: rows, errorMessage: "Error reading CSV file: \(error.localizedDescription)")
         }
         
-        return ParseResult(recipients: recipients, headers: parsedHeaders, errorMessage: nil)
+        return ParseResult(headers: parsedHeaders, rows: rows, errorMessage: nil)
     }
     
     private func parseCSVLine(_ line: String, delimiter: Character) -> [String] {
@@ -135,18 +113,6 @@ class SpreadsheetParser {
         let end = trimmed.index(trimmed.endIndex, offsetBy: -2)
         let inner = String(trimmed[start..<end])
         return inner.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-    
-    private func buildHeaderIndexMap(from headers: [String]) -> [String: Int] {
-        var map: [String: Int] = [:]
-        for (index, header) in headers.enumerated() {
-            let key = normalizeHeader(header)
-            guard !key.isEmpty else { continue }
-            if map[key] == nil {
-                map[key] = index
-            }
-        }
-        return map
     }
     
     private func buildFieldMap(headers: [String], components: [String]) -> [String: String] {
@@ -228,4 +194,3 @@ class SpreadsheetParser {
         return records
     }
 }
-

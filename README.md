@@ -20,11 +20,12 @@ MailLoom generates draft emails with the placeholders replaced by the correspond
 ## Features
 
 - **CSV Import**: Import recipient data from CSV files with a selectable delimiter. CSV Cells may include multiline text
-- **Header-Based Parsing**: Columns can be in any order as long as `name`, `email`, and `message` are present. Extra headers can be used as keys in the email template
+- **Header Mapping**: Columns can be in any order. After import, choose which header maps to `email` (required) and optionally `message`
 - **Message Personalization**: Use `{{header}}` placeholders (e.g., `{{name}}`, `{{blop}}`)
-- **Global message**: You can use the same messge template for all recipients
+- **Global message**: You can use the same message template for all recipients
+- **Header Helper in Compose**: While editing the default message, MailLoom shows available `{{header}}` placeholders
 - **Subject + CC**: Global subject and CC list with placeholder support
-- **Two-Step Flow**: Import + stats first, compose and review recipients second
+- **Two-Step Flow**: Import + mapping first, compose and review recipients second
 - **Mail.app Integration**: Creates draft emails in Mail.app for review before sending
 
 ## Requirements
@@ -41,9 +42,9 @@ MailLoom generates draft emails with the placeholders replaced by the correspond
 
 ## Usage
 
-1. **Prepare your CSV file** with a header row. Required columns are `name`, `email`, and `message`.
+1. **Prepare your CSV file** with a header row.
 2. **Import the CSV** in MailLoom and choose the correct delimiter.
-3. **Review import stats** (parsed headers + entry count) and click **Proceed**.
+3. **Choose header mapping** by selecting which parsed header should be used as `email` (required) and optionally `message`, then click **Proceed**.
 4. **Customize** the subject, CC list, and message template. Use placeholders like `{{name}}` or any header.
 5. **Review recipients** and select who to send.
 6. **Send emails** to create Mail.app drafts.
@@ -51,7 +52,10 @@ MailLoom generates draft emails with the placeholders replaced by the correspond
 ## CSV Format
 
 - The first row must be a header row.
-- Required headers: `name`, `email`, `message`
+- No specific header names are required.
+- Before proceeding, select a header for `email`.
+- The `message` header is optional.
+- If a `name` column exists, it is used for recipient display/personalization; otherwise MailLoom derives a fallback name from the email local-part.
 - Additional headers are supported and can be referenced in the message template.
 
 See example in `sample_recipients.csv`
@@ -59,6 +63,8 @@ See example in `sample_recipients.csv`
 ## Message Personalization
 
 You can use any header name as a placeholder in the subject, CC, or message body.
+
+When editing the default message template, MailLoom displays the available headers.
 
 Example:
 

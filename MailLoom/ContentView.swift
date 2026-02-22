@@ -33,6 +33,14 @@ private enum DelimiterOption: String, CaseIterable, Identifiable {
     }
 }
 
+private struct ImportViewHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 struct ContentView: View {
     private enum FlowStep {
         case importStep
@@ -49,6 +57,10 @@ struct ContentView: View {
     @State private var delimiterOption: DelimiterOption = .comma
     @State private var customDelimiter: String = ""
     @State private var parsedHeaders: [String] = []
+    @State private var importedRows: [[String: String]] = []
+    @State private var selectedEmailHeader: String = ""
+    @State private var selectedMessageHeader: String = ""
+    @State private var importContentHeight: CGFloat = 0
     @State private var flowStep: FlowStep = .importStep
     
     var body: some View {
@@ -72,15 +84,25 @@ struct ContentView: View {
                     delimiterOption: $delimiterOption,
                     customDelimiter: $customDelimiter,
                     parsedHeaders: parsedHeaders,
-                    recipientsCount: recipients.count,
+                    parsedEntriesCount: importedRows.count,
+                    selectedEmailHeader: $selectedEmailHeader,
+                    selectedMessageHeader: $selectedMessageHeader,
+                    canProceed: canProceedToCompose,
                     onImport: handleFileImport,
-                    onProceed: {
-                        flowStep = .composeStep
+                    onProceed: proceedToCompose
+                )
+                .background(
+                    GeometryReader { geometry in
+                        Color.clear.preference(
+                            key: ImportViewHeightPreferenceKey.self,
+                            value: geometry.size.height
+                        )
                     }
                 )
             } else {
                 ComposeView(
                     recipients: $recipients,
+                    parsedHeaders: parsedHeaders,
                     defaultMessage: $defaultMessage,
                     emailSubject: $emailSubject,
                     ccList: $ccList,
@@ -91,7 +113,12 @@ struct ContentView: View {
             
             Spacer()
         }
-        .frame(width: flowStep == .composeStep ? 900 : 700, height: flowStep == .composeStep ? 720 : 400)
+        .onPreferenceChange(ImportViewHeightPreferenceKey.self) { newHeight in
+            if abs(importContentHeight - newHeight) > 1 {
+                importContentHeight = newHeight
+            }
+        }
+        .frame(width: flowStep == .composeStep ? 900 : 700, height: currentWindowHeight)
         .alert("MailLoom", isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -120,8 +147,11 @@ struct ContentView: View {
             
             let parser = SpreadsheetParser()
             let parseResult = parser.parseCSV(from: selectedFile, delimiter: delimiter)
-            recipients = parseResult.recipients
+            recipients = []
+            importedRows = parseResult.rows
             parsedHeaders = parseResult.headers
+            selectedEmailHeader = defaultHeader(preferred: "email")
+            selectedMessageHeader = defaultHeader(preferred: "message")
             
             if let errorMessage = parseResult.errorMessage {
                 alertMessage = errorMessage
@@ -129,15 +159,11 @@ struct ContentView: View {
                 return
             }
             
-            if recipients.isEmpty {
-                alertMessage = "No valid recipients found in the file"
+            if importedRows.isEmpty {
+                alertMessage = "No entries found in the file"
                 showAlert = true
             } else {
-                // Set default message from first recipient if available
-                if let firstMessage = recipients.first?.message, !firstMessage.isEmpty {
-                    defaultMessage = firstMessage
-                }
-                alertMessage = "Successfully imported \(recipients.count) recipients"
+                alertMessage = "Choose which header should be used as email (message is optional), then click Proceed"
                 showAlert = false
             }
         } catch {
@@ -168,6 +194,76 @@ struct ContentView: View {
             self.showAlert = true
         }
     }
+
+    private var canProceedToCompose: Bool {
+        !importedRows.isEmpty && !selectedEmailHeader.isEmpty
+    }
+
+    private var currentWindowHeight: CGFloat {
+        if flowStep == .composeStep {
+            return 720
+        }
+        return max(400, importContentHeight + 80)
+    }
+
+    private func proceedToCompose() {
+        guard canProceedToCompose else {
+            alertMessage = "Please choose an email header before proceeding"
+            showAlert = true
+            return
+        }
+
+        let mappedRecipients = buildRecipients(
+            rows: importedRows,
+            emailHeader: selectedEmailHeader,
+            messageHeader: selectedMessageHeader
+        )
+
+        if mappedRecipients.isEmpty {
+            alertMessage = "No valid recipients found. Verify the selected email column."
+            showAlert = true
+            return
+        }
+
+        recipients = mappedRecipients
+        if let firstMessage = mappedRecipients.first?.message, !firstMessage.isEmpty {
+            defaultMessage = firstMessage
+        }
+        flowStep = .composeStep
+    }
+
+    private func defaultHeader(preferred: String) -> String {
+        parsedHeaders.first(where: { $0 == preferred }) ?? ""
+    }
+
+    private func buildRecipients(
+        rows: [[String: String]],
+        emailHeader: String,
+        messageHeader: String
+    ) -> [Recipient] {
+        var mapped: [Recipient] = []
+
+        for row in rows {
+            let email = row[emailHeader, default: ""].trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !email.isEmpty else {
+                continue
+            }
+
+            let message = messageHeader.isEmpty ? "" : row[messageHeader, default: ""]
+            let selectedName = row["name", default: ""].trimmingCharacters(in: .whitespacesAndNewlines)
+            let fallbackName = String(email.split(separator: "@").first ?? Substring(email))
+            let name = selectedName.isEmpty ? fallbackName : selectedName
+
+            var fields = row
+            fields["email"] = email
+            fields["message"] = message
+            fields["name"] = name
+
+            mapped.append(Recipient(name: name, email: email, message: message, fields: fields))
+        }
+
+        return mapped
+    }
     
     private func selectedDelimiter() -> Character? {
         switch delimiterOption {
@@ -192,7 +288,10 @@ private struct ImportView: View {
     @Binding var delimiterOption: DelimiterOption
     @Binding var customDelimiter: String
     let parsedHeaders: [String]
-    let recipientsCount: Int
+    let parsedEntriesCount: Int
+    @Binding var selectedEmailHeader: String
+    @Binding var selectedMessageHeader: String
+    let canProceed: Bool
     let onImport: (Result<[URL], Error>) -> Void
     let onProceed: () -> Void
     
@@ -234,6 +333,33 @@ private struct ImportView: View {
                 }
             }
             .padding(.horizontal)
+
+            if !parsedHeaders.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Header Mapping")
+                        .font(.title2)
+                        .bold()
+
+                    Picker("Email header", selection: $selectedEmailHeader) {
+                        Text("Select email header").tag("")
+                        ForEach(parsedHeaders, id: \.self) { header in
+                            Text(header).tag(header)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Picker("Message header (optional)", selection: $selectedMessageHeader) {
+                        Text("None").tag("")
+                        ForEach(parsedHeaders, id: \.self) { header in
+                            Text(header).tag(header)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+            }
             
             VStack(alignment: .leading, spacing: 10) {
                 Text("Import Summary")
@@ -241,7 +367,7 @@ private struct ImportView: View {
                     .bold()
                 Text("Parsed headers: \(parsedHeaders.isEmpty ? "-" : parsedHeaders.joined(separator: ", "))")
                     .font(.title3)
-                Text("Number of entries parsed: \(recipientsCount)")
+                Text("Number of entries parsed: \(parsedEntriesCount)")
                     .font(.title3)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -254,11 +380,11 @@ private struct ImportView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(recipientsCount == 0 ? Color.gray : Color.green)
+                .background(canProceed ? Color.green : Color.gray)
                 .foregroundColor(.white)
                 .cornerRadius(8)
             }
-            .disabled(recipientsCount == 0)
+            .disabled(!canProceed)
             .padding(.horizontal)
         }
     }
@@ -266,12 +392,34 @@ private struct ImportView: View {
 
 private struct ComposeView: View {
     @Binding var recipients: [Recipient]
+    let parsedHeaders: [String]
     @Binding var defaultMessage: String
     @Binding var emailSubject: String
     @Binding var ccList: String
     let onBack: () -> Void
     let onSend: () -> Void
     @State private var useDefaultMessage = false
+
+    private var availableHeaders: [String] {
+        let csvHeaderSet = Set(parsedHeaders)
+        var keys = Set(recipients.flatMap { $0.fields.keys })
+
+        if !csvHeaderSet.contains("name") {
+            keys.remove("name")
+        }
+        if !csvHeaderSet.contains("message") {
+            keys.remove("message")
+        }
+
+        return keys.sorted()
+    }
+
+    private var availableHeadersDisplay: String {
+        if availableHeaders.isEmpty {
+            return "-"
+        }
+        return availableHeaders.map { "{{\($0)}}" }.joined(separator: ", ")
+    }
     
     var body: some View {
         ScrollView {
@@ -310,6 +458,10 @@ private struct ComposeView: View {
                         }
 
                     if useDefaultMessage {
+                        Text("Available headers: \(availableHeadersDisplay)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
                         Text("Warning: This will override any per row {{message}} value if present.")
                             .font(.caption)
                             .foregroundColor(.orange)
