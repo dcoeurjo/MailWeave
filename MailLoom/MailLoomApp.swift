@@ -7,6 +7,6 @@ struct MailLoomApp: App {
             ContentView()
         }
         .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
+        .windowResizability(.automatic)
     }
 }

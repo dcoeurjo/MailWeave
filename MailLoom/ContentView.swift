@@ -137,7 +137,15 @@ struct ContentView: View {
                 importContentHeight = newHeight
             }
         }
-        .frame(width: flowStep == .composeStep ? 900 : 700, height: currentWindowHeight)
+        .frame(
+            minWidth: flowStep == .composeStep ? 900 : 700,
+            idealWidth: flowStep == .composeStep ? 900 : 700,
+            maxWidth: .infinity,
+            minHeight: currentWindowHeight,
+            idealHeight: currentWindowHeight,
+            maxHeight: .infinity,
+            alignment: .top
+        )
         .alert("MailLoom", isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
         } message: {

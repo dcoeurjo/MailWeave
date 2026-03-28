@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- The app window is now fully resizable instead of being constrained to the content size.
 - In step 2 (Compose), added a recipients bulk-selection button to `Select all` / `Unselect all` next to the recipients header.
 - Added a GitHub Actions workflow (`.github/workflows/macos-build.yml`) to run a macOS Xcode build on each push to `main` and on pull requests targeting `main`.
 
