@@ -89,7 +89,7 @@ struct ContentView: View {
                     .scaledToFit()
                     .frame(width: 36, height: 36)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                Text("MailLoom")
+                Text("MailWeave")
                     .font(.largeTitle)
                     .bold()
             }
@@ -146,7 +146,7 @@ struct ContentView: View {
             maxHeight: .infinity,
             alignment: .top
         )
-        .alert("MailLoom", isPresented: $showAlert) {
+        .alert("MailWeave", isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(alertMessage)
@@ -249,7 +249,7 @@ struct ContentView: View {
             showAlert = true
             return
         }
-
+        
         let mappedRecipients = buildRecipients(
             rows: importedRows,
             emailHeader: selectedEmailHeader,

@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1A0000001 /* MailLoomApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000002 /* MailLoomApp.swift */; };
+		1A0000001 /* MailWeaveApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000002 /* MailWeaveApp.swift */; };
 		1A0000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000004 /* ContentView.swift */; };
 		1A0000005 /* EmailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000006 /* EmailService.swift */; };
 		1A0000007 /* SpreadsheetParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000008 /* SpreadsheetParser.swift */; };
@@ -20,17 +20,17 @@
 			containerPortal = 71C15D4C2F41FEE300333D15 /* Mailloom.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = 1A000000D;
-			remoteInfo = MailLoom;
+			remoteInfo = MailWeave;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		1A0000002 /* MailLoomApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailLoomApp.swift; sourceTree = "<group>"; };
+		1A0000002 /* MailWeaveApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailWeaveApp.swift; sourceTree = "<group>"; };
 		1A0000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1A0000006 /* EmailService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailService.swift; sourceTree = "<group>"; };
 		1A0000008 /* SpreadsheetParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpreadsheetParser.swift; sourceTree = "<group>"; };
 		1A000000A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		1A000000D /* MailLoom.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MailLoom.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A000000D /* MailWeave.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MailWeave.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A000000E /* Mailloom.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Mailloom.entitlements; sourceTree = "<group>"; };
 		71BEA5142F4B371900825E5D /* Changelog.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Changelog.md; sourceTree = "<group>"; };
 		71C15D482F41F29D00333D15 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -63,7 +63,7 @@
 		1A0000011 /* Mailloom */ = {
 			isa = PBXGroup;
 			children = (
-				1A0000002 /* MailLoomApp.swift */,
+				1A0000002 /* MailWeaveApp.swift */,
 				1A0000004 /* ContentView.swift */,
 				1A0000006 /* EmailService.swift */,
 				1A0000008 /* SpreadsheetParser.swift */,
@@ -77,7 +77,7 @@
 		1A0000012 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1A000000D /* MailLoom.app */,
+				1A000000D /* MailWeave.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -107,9 +107,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1A0000014 /* MailLoom */ = {
+		1A0000014 /* MailWeave */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1A0000015 /* Build configuration list for PBXNativeTarget "MailLoom" */;
+			buildConfigurationList = 1A0000015 /* Build configuration list for PBXNativeTarget "MailWeave" */;
 			buildPhases = (
 				1A0000016 /* Sources */,
 				1A000000F /* Frameworks */,
@@ -119,9 +119,9 @@
 			);
 			dependencies = (
 			);
-			name = MailLoom;
-			productName = MailLoom;
-			productReference = 1A000000D /* MailLoom.app */;
+			name = MailWeave;
+			productName = MailWeave;
+			productReference = 1A000000D /* MailWeave.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -158,7 +158,7 @@
 			);
 			projectRoot = "";
 			targets = (
-				1A0000014 /* MailLoom */,
+				1A0000014 /* MailWeave */,
 			);
 		};
 /* End PBXProject section */
@@ -189,7 +189,7 @@
 				1A0000003 /* ContentView.swift in Sources */,
 				1A0000005 /* EmailService.swift in Sources */,
 				1A0000007 /* SpreadsheetParser.swift in Sources */,
-				1A0000001 /* MailLoomApp.swift in Sources */,
+				1A0000001 /* MailWeaveApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -325,15 +325,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Mailloom/Mailloom.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"MailLoom/Preview Content\"";
-				DEVELOPMENT_TEAM = 2UDS55C3T2;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = MailLoom;
+				INFOPLIST_KEY_CFBundleDisplayName = MailWeave;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -341,7 +341,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.Mailloom;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.MailWeave;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -355,15 +355,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Mailloom/Mailloom.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"MailLoom/Preview Content\"";
-				DEVELOPMENT_TEAM = 2UDS55C3T2;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = MailLoom;
+				INFOPLIST_KEY_CFBundleDisplayName = MailWeave;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -371,7 +371,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.Mailloom;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.MailWeave;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -381,7 +381,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1A0000015 /* Build configuration list for PBXNativeTarget "MailLoom" */ = {
+		1A0000015 /* Build configuration list for PBXNativeTarget "MailWeave" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1A000001C /* Debug */,

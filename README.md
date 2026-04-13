@@ -1,19 +1,19 @@
-# MailLoom
+# MailWeave
 ![](icon-small.png)
 
 Current version: `0.1`
 
 
-[![Xcode - Build and Analyze](https://github.com/dcoeurjo/MailLoom/actions/workflows/objective-c-xcode.yml/badge.svg)](https://github.com/dcoeurjo/MailLoom/actions/workflows/objective-c-xcode.yml)
+[![Xcode - Build and Analyze](https://github.com/dcoeurjo/MailWeave/actions/workflows/objective-c-xcode.yml/badge.svg)](https://github.com/dcoeurjo/MailWeave/actions/workflows/objective-c-xcode.yml)
 
-MailLoom(beta) is a simple macOS app that lets you create personalized email drafts in Mail.app using a CSV file. For example, your CSV might look like this:
+MailWeave(beta) is a simple macOS app that lets you create personalized email drafts in Mail.app using a CSV file. For example, your CSV might look like this:
 ```csv
 name,email,company,message
 Jane Doe,jane.doe@example.com,Acme,Hello {{name}} from {{company}} Greetings!
 John Doe,john.doe@example.com,Acme,Hello {{name}} from {{company}} !
 ```
 
-MailLoom generates draft emails with the placeholders replaced by the corresponding values, so you can review them before sending.
+MailWeave generates draft emails with the placeholders replaced by the corresponding values, so you can review them before sending.
 
 ![](snapshot.png)
 
@@ -25,7 +25,7 @@ MailLoom generates draft emails with the placeholders replaced by the correspond
 - **Header Mapping + Message Mode**: Choose whether messages are global or per-recipient. `email` mapping is always required; `message` mapping is required only in per-recipient mode
 - **Message Personalization**: Use `{{header}}` placeholders (e.g., `{{name}}`, `{{blop}}`)
 - **Global message**: You can use the same message template for all recipients
-- **Header Helper in Compose**: While editing the default message, MailLoom shows available `{{header}}` placeholders
+- **Header Helper in Compose**: While editing the default message, MailWeave shows available `{{header}}` placeholders
 - **Per-Recipient Preview**: In compose step, each recipient preview shows the message with placeholders already replaced
 - **Subject + CC**: Global subject and CC list with placeholder support
 - **Two-Step Flow**: Import + mapping first, compose and review recipients second
@@ -46,7 +46,7 @@ MailLoom generates draft emails with the placeholders replaced by the correspond
 ## Usage
 
 1. **Prepare your CSV file** with a header row.
-2. **Import the CSV** in MailLoom. Delimiter is selected from the compact control next to the import button (default is `;`).
+2. **Import the CSV** in MailWeave. Delimiter is selected from the compact control next to the import button (default is `;`).
 3. **Choose message mode** in the first step:
    - `Global message`: map `email` only.
    - `Per recipient`: map both `email` and `message`.
@@ -63,7 +63,7 @@ MailLoom generates draft emails with the placeholders replaced by the correspond
 - Default CSV delimiter is `;` (semicolon).
 - If message mode is `Per recipient`, selecting a `message` header is required.
 - If message mode is `Global message`, `message` header mapping is not needed.
-- If a `name` column exists, it is used for recipient display/personalization; otherwise MailLoom derives a fallback name from the email local-part.
+- If a `name` column exists, it is used for recipient display/personalization; otherwise MailWeave derives a fallback name from the email local-part.
 - Additional headers are supported and can be referenced in the message template.
 
 See example in `sample_recipients.csv`
@@ -72,7 +72,7 @@ See example in `sample_recipients.csv`
 
 You can use any header name as a placeholder in the subject, CC, or message body.
 
-When editing the default message template, MailLoom displays the available headers.
+When editing the default message template, MailWeave displays the available headers.
 
 Example:
 
