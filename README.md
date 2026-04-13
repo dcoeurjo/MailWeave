@@ -1,7 +1,7 @@
 # MailWeave
 ![](icon-small.png)
 
-Current version: `0.1`
+Current version: `0.2`
 
 
 [![Xcode - Build and Analyze](https://github.com/dcoeurjo/MailWeave/actions/workflows/objective-c-xcode.yml/badge.svg)](https://github.com/dcoeurjo/MailWeave/actions/workflows/objective-c-xcode.yml)
