@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2] - 2026-04-13
+
 - The app window is now fully resizable instead of being constrained to the content size.
 - Renamed the app to MailWeave.
 - In step 2 (Compose), added a recipients bulk-selection button to `Select all` / `Unselect all` next to the recipients header.
