@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 import AppKit
 
 struct Recipient: Identifiable, Codable {
-    let id = UUID()
+    var id = UUID()
     var name: String
     var email: String
     var message: String
@@ -66,6 +66,8 @@ struct ContentView: View {
     @State private var recipients: [Recipient] = []
     @State private var defaultMessage: String = ""
     @State private var emailSubject: String = "Message for {{name}}"
+    @State private var replayMail: String = ""
+
     @State private var ccList: String = ""
     @State private var isImporting = false
     @State private var showAlert = false
@@ -125,6 +127,7 @@ struct ContentView: View {
                     defaultMessage: $defaultMessage,
                     emailSubject: $emailSubject,
                     ccList: $ccList,
+                    replyMail: $replayMail,
                     onBack: { flowStep = .importStep },
                     onSend: sendEmails
                 )
@@ -213,7 +216,7 @@ struct ContentView: View {
         }
         
         let emailService = EmailService()
-        emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList) { results in
+        emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replayMail) { results in
             let successCount = results.filter { $0 }.count
             let failureCount = results.count - successCount
             
@@ -249,7 +252,7 @@ struct ContentView: View {
             showAlert = true
             return
         }
-        
+
         let mappedRecipients = buildRecipients(
             rows: importedRows,
             emailHeader: selectedEmailHeader,
@@ -507,6 +510,7 @@ private struct ComposeView: View {
     @Binding var defaultMessage: String
     @Binding var emailSubject: String
     @Binding var ccList: String
+    @Binding var replyMail: String
     let onBack: () -> Void
     let onSend: () -> Void
 
@@ -540,59 +544,61 @@ private struct ComposeView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                HStack {
-                    Button(action: onBack) {
-                        HStack {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal)
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Email Subject")
-                        .font(.headline)
-                    TextField("Subject", text: $emailSubject)
-                        .textFieldStyle(.roundedBorder)
-                    Text("CC (comma-separated)")
-                        .font(.headline)
-                    TextField("email@example.com, email2@example.com", text: $ccList)
-                        .textFieldStyle(.roundedBorder)
-                }
-                .padding(.horizontal)
-                
-                // Default Message Editor
-                VStack(alignment: .leading, spacing: 8) {
-                    if messageMode == .global {
-                        Text("Global Message Template")
-                            .font(.headline)
+      VStack(spacing: 20) {
+          HStack {
+              Button(action: onBack) {
+                  HStack {
+                      Image(systemName: "chevron.left")
+                      Text("Back")
+                  }
+              }
+              Spacer()
+          }
+          .padding(.horizontal)
+          
+          VStack(alignment: .leading, spacing: 8) {
+              Text("Email Subject")
+                  .font(.headline)
+              TextField("Subject", text: $emailSubject)
+                  .textFieldStyle(.roundedBorder)
+              Text("CC (comma-separated)")
+                  .font(.headline)
+              TextField("email@example.com, email2@example.com", text: $ccList)
+                  .textFieldStyle(.roundedBorder)
+              Text("Reply to")
+                .font(.headline)
+              TextField("email@example.com, email2@example.com", text: $replyMail)
+                .textFieldStyle(.roundedBorder)
+          }
+          .padding(.horizontal)
+          
+          // Default Message Editor
+          VStack(alignment: .leading, spacing: 8) {
+              if messageMode == .global {
+                  Text("Global Message Template")
+                      .font(.headline)
+                  Text("Available headers: \(availableHeadersDisplay)")
+                      .font(.caption)
+                      .foregroundColor(.secondary)
+                  TextEditor(text: $defaultMessage)
+                      .frame(height: 140)
+                      .border(Color.gray.opacity(0.5))
+                      .onChange(of: defaultMessage) { _ in
+                          applyGlobalMessage()
+                      }
+                  Text("Use {{header}} placeholders like {{name}} in the message")
+                      .font(.caption)
+                      .foregroundColor(.gray)
+              } else {
+                  Text("Per-recipient messages are loaded from the selected CSV message header.")
+                      .font(.caption)
+                      .foregroundColor(.secondary)
+              }
+          }
+          .padding(.horizontal)
+          
+      ScrollView {
 
-                        Text("Available headers: \(availableHeadersDisplay)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        TextEditor(text: $defaultMessage)
-                            .frame(height: 140)
-                            .border(Color.gray.opacity(0.5))
-                            .onChange(of: defaultMessage) { _ in
-                                applyGlobalMessage()
-                            }
-
-                        Text("Use {{header}} placeholders like {{name}} in the message")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    } else {
-                        Text("Per-recipient messages are loaded from the selected CSV message header.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding(.horizontal)
-                
                 // Recipients List
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -619,24 +625,23 @@ private struct ComposeView: View {
                     .border(Color.gray.opacity(0.3))
                 }
                 .padding(.horizontal)
-                
-                // Send Button
-                Button(action: onSend) {
-                    HStack {
-                        Image(systemName: "envelope")
-                        Text("Send Emails (\(recipients.filter { $0.selected }.count))")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-                }
-                .disabled(recipients.filter { $0.selected }.isEmpty)
-                .padding(.horizontal)
             }
             .padding(.bottom)
         }
+      // Send Button
+      Button(action: onSend) {
+          HStack {
+              Image(systemName: "envelope")
+              Text("Send Emails (\(recipients.filter { $0.selected }.count))")
+          }
+          .frame(maxWidth: .infinity)
+          .padding()
+          .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
+          .foregroundColor(.white)
+          .cornerRadius(8)
+      }
+      .disabled(recipients.filter { $0.selected }.isEmpty)
+      .padding(.horizontal)
         .onAppear {
             if messageMode == .global {
                 applyGlobalMessage()
@@ -720,3 +725,4 @@ struct RecipientRow: View {
 #Preview {
     ContentView()
 }
+
