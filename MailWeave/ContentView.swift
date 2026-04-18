@@ -160,12 +160,8 @@ struct ContentView: View {
         do {
             guard let selectedFile = try result.get().first else { return }
             
-            // Start accessing a security-scoped resource
-            guard selectedFile.startAccessingSecurityScopedResource() else {
-                alertMessage = "Unable to access the file"
-                showAlert = true
-                return
-            }
+          // Result not tested since drag and drop will return false from it
+          _ = selectedFile.startAccessingSecurityScopedResource()
             
             defer { selectedFile.stopAccessingSecurityScopedResource() }
             
@@ -343,7 +339,7 @@ private struct ImportView: View {
     let canProceed: Bool
     let onImport: (Result<[URL], Error>) -> Void
     let onProceed: () -> Void
-
+    @State private var isDroppingFile: Bool = false
     private var delimiterValue: String {
         switch delimiterOption {
         case .comma:
@@ -374,13 +370,13 @@ private struct ImportView: View {
                     HStack {
                         Image(systemName: "doc.text")
                         Text("Import Spreadsheet (CSV)")
+                        .background(.clear)
                     }
-                    .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.borderedProminent)
+
                 .fileImporter(
                     isPresented: $isImporting,
                     allowedContentTypes: [.commaSeparatedText, .text],
@@ -388,8 +384,18 @@ private struct ImportView: View {
                 ) { result in
                     onImport(result)
                 }
-
-                VStack(alignment: .leading, spacing: 6) {
+                .onDrop(of: [UTType.fileURL], isTargeted: $isDroppingFile) { providers in
+                    guard let provider = providers.first else { return false }
+                    provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier) { item, error in
+                        guard let data = item as? Data,
+                              let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
+                        DispatchQueue.main.async {
+                            onImport(.success([url]))
+                        }
+                    }
+                    return true
+                }
+              VStack(alignment: .leading, spacing: 6) {
                     Text("Delimiter")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -490,14 +496,15 @@ private struct ImportView: View {
                 HStack {
                     Image(systemName: "arrow.right")
                     Text("Proceed")
+                    .background(.clear)
                 }
-                .frame(maxWidth: .infinity)
                 .padding()
-                .background(canProceed ? Color.green : Color.gray)
-                .foregroundColor(.white)
-                .cornerRadius(8)
+                .frame(maxWidth: .infinity)
             }
+            .background(canProceed ? Color.green : Color.gray)
+            .cornerRadius(8)
             .disabled(!canProceed)
+            .foregroundColor(.white)
             .padding(.horizontal)
         }
     }
@@ -557,18 +564,23 @@ private struct ComposeView: View {
           .padding(.horizontal)
           
           VStack(alignment: .leading, spacing: 8) {
+            HStack{
               Text("Email Subject")
-                  .font(.headline)
+                .font(.headline)
               TextField("Subject", text: $emailSubject)
+                .textFieldStyle(.roundedBorder)
+            }
+            HStack{  Text("CC (comma-separated)")
+                .font(.headline)
+              HStack{   TextField("email@example.com, email2@example.com", text: $ccList)
                   .textFieldStyle(.roundedBorder)
-              Text("CC (comma-separated)")
-                  .font(.headline)
-              TextField("email@example.com, email2@example.com", text: $ccList)
-                  .textFieldStyle(.roundedBorder)
-              Text("Reply to")
+              }
+            }
+            HStack{                Text("Reply to")
                 .font(.headline)
               TextField("email@example.com, email2@example.com", text: $replyMail)
                 .textFieldStyle(.roundedBorder)
+            }
           }
           .padding(.horizontal)
           
@@ -598,7 +610,6 @@ private struct ComposeView: View {
           .padding(.horizontal)
           
       ScrollView {
-
                 // Recipients List
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -621,7 +632,7 @@ private struct ComposeView: View {
                             }
                         }
                     }
-                    .frame(maxHeight: 200)
+                    .frame(maxHeight: .infinity)
                     .border(Color.gray.opacity(0.3))
                 }
                 .padding(.horizontal)
@@ -636,10 +647,11 @@ private struct ComposeView: View {
           }
           .frame(maxWidth: .infinity)
           .padding()
-          .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
-          .foregroundColor(.white)
-          .cornerRadius(8)
+        
       }
+      .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
+      .foregroundColor(.white)
+      .cornerRadius(8)
       .disabled(recipients.filter { $0.selected }.isEmpty)
       .padding(.horizontal)
         .onAppear {
