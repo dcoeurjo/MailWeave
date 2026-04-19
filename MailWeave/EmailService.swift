@@ -101,9 +101,10 @@ class EmailService {
         if !subject.isEmpty {
             queryItems.append(URLQueryItem(name: "subject", value: subject))
         }
-      if !replyTo.isEmpty {
-          queryItems.append(URLQueryItem(name: "reply-to", value: replyTo))
-      }
+        let normalizedReplyTo = replyTo.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !normalizedReplyTo.isEmpty {
+            queryItems.append(URLQueryItem(name: "reply-to", value: normalizedReplyTo))
+        }
         if !body.isEmpty {
             queryItems.append(URLQueryItem(name: "body", value: body))
         }
