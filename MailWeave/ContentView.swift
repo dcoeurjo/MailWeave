@@ -634,7 +634,6 @@ private struct ComposeView: View {
                             }
                         }
                     }
-                    .frame(maxHeight: .infinity)
                     .border(Color.gray.opacity(0.3))
                 }
                 .padding(.horizontal)
