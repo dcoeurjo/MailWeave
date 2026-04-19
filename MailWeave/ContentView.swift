@@ -127,7 +127,7 @@ struct ContentView: View {
                     defaultMessage: $defaultMessage,
                     emailSubject: $emailSubject,
                     ccList: $ccList,
-                    replyMail: $replayMail,
+                    replyMail: $replyMail,
                     onBack: { flowStep = .importStep },
                     onSend: sendEmails
                 )
@@ -160,10 +160,8 @@ struct ContentView: View {
         do {
             guard let selectedFile = try result.get().first else { return }
             
-          // Result not tested since drag and drop will return false from it
-          _ = selectedFile.startAccessingSecurityScopedResource()
-            
-            defer { selectedFile.stopAccessingSecurityScopedResource() }
+            // Result not tested since drag and drop will return false from it
+            let didStartAccessing = selectedFile.startAccessingSecurityScopedResource()
             
             guard let delimiter = selectedDelimiter() else {
                 alertMessage = "Please enter a single delimiter character"
@@ -178,7 +176,9 @@ struct ContentView: View {
             parsedHeaders = parseResult.headers
             selectedEmailHeader = defaultHeader(preferred: "email")
             selectedMessageHeader = defaultHeader(preferred: "message")
-            
+            if didStartAccessing {
+              selectedFile.stopAccessingSecurityScopedResource()
+            }
             if let errorMessage = parseResult.errorMessage {
                 alertMessage = errorMessage
                 showAlert = true
@@ -200,6 +200,8 @@ struct ContentView: View {
             alertMessage = "Error importing file: \(error.localizedDescription)"
             showAlert = true
         }
+       
+
     }
     
     func sendEmails() {
@@ -212,7 +214,7 @@ struct ContentView: View {
         }
         
         let emailService = EmailService()
-        emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replayMail) { results in
+        emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replyMail) { results in
             let successCount = results.filter { $0 }.count
             let failureCount = results.count - successCount
             
