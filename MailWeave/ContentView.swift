@@ -66,7 +66,7 @@ struct ContentView: View {
     @State private var recipients: [Recipient] = []
     @State private var defaultMessage: String = ""
     @State private var emailSubject: String = "Message for {{name}}"
-    @State private var replayMail: String = ""
+    @State private var replyMail: String = ""
 
     @State private var ccList: String = ""
     @State private var isImporting = false
