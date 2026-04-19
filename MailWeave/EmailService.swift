@@ -2,7 +2,7 @@ import Foundation
 import AppKit
 
 class EmailService {
-  func sendEmails(to recipients: [Recipient], subject: String, cc: String, replyTo: String, completion: @escaping ([Bool]) -> Void) {
+    func sendEmails(to recipients: [Recipient], subject: String, cc: String, replyTo: String, completion: @escaping ([Bool]) -> Void) {
         var results: [Bool] = []
         
         // Send emails asynchronously to avoid blocking the UI
