@@ -376,8 +376,11 @@ private struct ImportView: View {
                     }
                     .padding()
                     .frame(maxWidth: .infinity)
+                    .background(Color.accentColor)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.plain)
 
                 .fileImporter(
                     isPresented: $isImporting,
