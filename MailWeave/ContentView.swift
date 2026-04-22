@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 import AppKit
 
 struct Recipient: Identifiable, Codable {
-    let id = UUID()
+    var id = UUID()
     var name: String
     var email: String
     var message: String
@@ -66,6 +66,8 @@ struct ContentView: View {
     @State private var recipients: [Recipient] = []
     @State private var defaultMessage: String = ""
     @State private var emailSubject: String = "Message for {{name}}"
+    @State private var replyMail: String = ""
+
     @State private var ccList: String = ""
     @State private var isImporting = false
     @State private var showAlert = false
@@ -125,6 +127,7 @@ struct ContentView: View {
                     defaultMessage: $defaultMessage,
                     emailSubject: $emailSubject,
                     ccList: $ccList,
+                    replyMail: $replyMail,
                     onBack: { flowStep = .importStep },
                     onSend: sendEmails
                 )
@@ -157,14 +160,8 @@ struct ContentView: View {
         do {
             guard let selectedFile = try result.get().first else { return }
             
-            // Start accessing a security-scoped resource
-            guard selectedFile.startAccessingSecurityScopedResource() else {
-                alertMessage = "Unable to access the file"
-                showAlert = true
-                return
-            }
-            
-            defer { selectedFile.stopAccessingSecurityScopedResource() }
+            // Result not tested since drag and drop will return false from it
+            let didStartAccessing = selectedFile.startAccessingSecurityScopedResource()
             
             guard let delimiter = selectedDelimiter() else {
                 alertMessage = "Please enter a single delimiter character"
@@ -179,7 +176,9 @@ struct ContentView: View {
             parsedHeaders = parseResult.headers
             selectedEmailHeader = defaultHeader(preferred: "email")
             selectedMessageHeader = defaultHeader(preferred: "message")
-            
+            if didStartAccessing {
+              selectedFile.stopAccessingSecurityScopedResource()
+            }
             if let errorMessage = parseResult.errorMessage {
                 alertMessage = errorMessage
                 showAlert = true
@@ -201,6 +200,8 @@ struct ContentView: View {
             alertMessage = "Error importing file: \(error.localizedDescription)"
             showAlert = true
         }
+       
+
     }
     
     func sendEmails() {
@@ -213,7 +214,7 @@ struct ContentView: View {
         }
         
         let emailService = EmailService()
-        emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList) { results in
+        emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replyMail) { results in
             let successCount = results.filter { $0 }.count
             let failureCount = results.count - successCount
             
@@ -249,7 +250,7 @@ struct ContentView: View {
             showAlert = true
             return
         }
-        
+
         let mappedRecipients = buildRecipients(
             rows: importedRows,
             emailHeader: selectedEmailHeader,
@@ -340,7 +341,7 @@ private struct ImportView: View {
     let canProceed: Bool
     let onImport: (Result<[URL], Error>) -> Void
     let onProceed: () -> Void
-
+    @State private var isDroppingFile: Bool = false
     private var delimiterValue: String {
         switch delimiterOption {
         case .comma:
@@ -371,13 +372,16 @@ private struct ImportView: View {
                     HStack {
                         Image(systemName: "doc.text")
                         Text("Import Spreadsheet (CSV)")
+                        .background(.clear)
                     }
-                    .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.blue)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.accentColor)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                 }
+                .buttonStyle(.plain)
+
                 .fileImporter(
                     isPresented: $isImporting,
                     allowedContentTypes: [.commaSeparatedText, .text],
@@ -385,8 +389,18 @@ private struct ImportView: View {
                 ) { result in
                     onImport(result)
                 }
-
-                VStack(alignment: .leading, spacing: 6) {
+                .onDrop(of: [UTType.fileURL], isTargeted: $isDroppingFile) { providers in
+                    guard let provider = providers.first else { return false }
+                    provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier) { item, error in
+                        guard let data = item as? Data,
+                              let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
+                        DispatchQueue.main.async {
+                            onImport(.success([url]))
+                        }
+                    }
+                    return true
+                }
+              VStack(alignment: .leading, spacing: 6) {
                     Text("Delimiter")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -487,14 +501,15 @@ private struct ImportView: View {
                 HStack {
                     Image(systemName: "arrow.right")
                     Text("Proceed")
+                    .background(.clear)
                 }
-                .frame(maxWidth: .infinity)
                 .padding()
-                .background(canProceed ? Color.green : Color.gray)
-                .foregroundColor(.white)
-                .cornerRadius(8)
+                .frame(maxWidth: .infinity)
             }
+            .background(canProceed ? Color.green : Color.gray)
+            .cornerRadius(8)
             .disabled(!canProceed)
+            .foregroundColor(.white)
             .padding(.horizontal)
         }
     }
@@ -507,6 +522,7 @@ private struct ComposeView: View {
     @Binding var defaultMessage: String
     @Binding var emailSubject: String
     @Binding var ccList: String
+    @Binding var replyMail: String
     let onBack: () -> Void
     let onSend: () -> Void
 
@@ -540,59 +556,65 @@ private struct ComposeView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                HStack {
-                    Button(action: onBack) {
-                        HStack {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal)
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Email Subject")
-                        .font(.headline)
-                    TextField("Subject", text: $emailSubject)
-                        .textFieldStyle(.roundedBorder)
-                    Text("CC (comma-separated)")
-                        .font(.headline)
-                    TextField("email@example.com, email2@example.com", text: $ccList)
-                        .textFieldStyle(.roundedBorder)
-                }
-                .padding(.horizontal)
-                
-                // Default Message Editor
-                VStack(alignment: .leading, spacing: 8) {
-                    if messageMode == .global {
-                        Text("Global Message Template")
-                            .font(.headline)
-
-                        Text("Available headers: \(availableHeadersDisplay)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        TextEditor(text: $defaultMessage)
-                            .frame(height: 140)
-                            .border(Color.gray.opacity(0.5))
-                            .onChange(of: defaultMessage) { _ in
-                                applyGlobalMessage()
-                            }
-
-                        Text("Use {{header}} placeholders like {{name}} in the message")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    } else {
-                        Text("Per-recipient messages are loaded from the selected CSV message header.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding(.horizontal)
-                
+      VStack(spacing: 20) {
+          HStack {
+              Button(action: onBack) {
+                  HStack {
+                      Image(systemName: "chevron.left")
+                      Text("Back")
+                  }
+              }
+              Spacer()
+          }
+          .padding(.horizontal)
+          
+          VStack(alignment: .leading, spacing: 8) {
+            HStack{
+              Text("Email Subject")
+                .font(.headline)
+              TextField("Subject", text: $emailSubject)
+                .textFieldStyle(.roundedBorder)
+            }
+            HStack{  Text("CC (comma-separated)")
+                .font(.headline)
+              HStack{   TextField("email@example.com, email2@example.com", text: $ccList)
+                  .textFieldStyle(.roundedBorder)
+              }
+            }
+            HStack{                Text("Reply to")
+                .font(.headline)
+              TextField("email@example.com, email2@example.com", text: $replyMail)
+                .textFieldStyle(.roundedBorder)
+            }
+          }
+          .padding(.horizontal)
+          
+          // Default Message Editor
+          VStack(alignment: .leading, spacing: 8) {
+              if messageMode == .global {
+                  Text("Global Message Template")
+                      .font(.headline)
+                  Text("Available headers: \(availableHeadersDisplay)")
+                      .font(.caption)
+                      .foregroundColor(.secondary)
+                  TextEditor(text: $defaultMessage)
+                      .frame(height: 140)
+                      .border(Color.gray.opacity(0.5))
+                      .onChange(of: defaultMessage) { _ in
+                          applyGlobalMessage()
+                      }
+                  Text("Use {{header}} placeholders like {{name}} in the message")
+                      .font(.caption)
+                      .foregroundColor(.gray)
+              } else {
+                  Text("Per-recipient messages are loaded from the selected CSV message header.")
+                      .font(.caption)
+                      .foregroundColor(.secondary)
+              }
+          }
+          .padding(.horizontal)
+          
+      ScrollView {
                 // Recipients List
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -615,28 +637,27 @@ private struct ComposeView: View {
                             }
                         }
                     }
-                    .frame(maxHeight: 200)
                     .border(Color.gray.opacity(0.3))
                 }
-                .padding(.horizontal)
-                
-                // Send Button
-                Button(action: onSend) {
-                    HStack {
-                        Image(systemName: "envelope")
-                        Text("Send Emails (\(recipients.filter { $0.selected }.count))")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-                }
-                .disabled(recipients.filter { $0.selected }.isEmpty)
                 .padding(.horizontal)
             }
             .padding(.bottom)
         }
+      // Send Button
+      Button(action: onSend) {
+          HStack {
+              Image(systemName: "envelope")
+              Text("Send Emails (\(recipients.filter { $0.selected }.count))")
+          }
+          .frame(maxWidth: .infinity)
+          .padding()
+        
+      }
+      .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
+      .foregroundColor(.white)
+      .cornerRadius(8)
+      .disabled(recipients.filter { $0.selected }.isEmpty)
+      .padding(.horizontal)
         .onAppear {
             if messageMode == .global {
                 applyGlobalMessage()
@@ -720,3 +741,4 @@ struct RecipientRow: View {
 #Preview {
     ContentView()
 }
+

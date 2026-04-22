@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3] - 2026-04-18
+- Add Reply a new reply field in mail composition
+- Adjust UI with scrolling adjusted
+- Old name updated
+
 ## [0.2] - 2026-04-13
 
 - The app window is now fully resizable instead of being constrained to the content size.

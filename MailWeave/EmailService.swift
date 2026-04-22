@@ -2,7 +2,7 @@ import Foundation
 import AppKit
 
 class EmailService {
-    func sendEmails(to recipients: [Recipient], subject: String, cc: String, completion: @escaping ([Bool]) -> Void) {
+    func sendEmails(to recipients: [Recipient], subject: String, cc: String, replyTo: String, completion: @escaping ([Bool]) -> Void) {
         var results: [Bool] = []
         
         // Send emails asynchronously to avoid blocking the UI
@@ -14,6 +14,7 @@ class EmailService {
                 let success = self.createEmailInMailApp(
                     to: recipient.email,
                     cc: resolvedCc,
+                    replyTo: replyTo,
                     subject: resolvedSubject,
                     body: body
                 )
@@ -91,7 +92,7 @@ class EmailService {
         return inner.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
-    private func createEmailInMailApp(to: String, cc: String, subject: String, body: String) -> Bool {
+    private func createEmailInMailApp(to: String, cc: String, replyTo: String, subject: String, body: String) -> Bool {
         var components = URLComponents()
         components.scheme = "mailto"
         components.path = to
@@ -99,6 +100,10 @@ class EmailService {
         var queryItems: [URLQueryItem] = []
         if !subject.isEmpty {
             queryItems.append(URLQueryItem(name: "subject", value: subject))
+        }
+        let normalizedReplyTo = replyTo.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !normalizedReplyTo.isEmpty {
+            queryItems.append(URLQueryItem(name: "reply-to", value: normalizedReplyTo))
         }
         if !body.isEmpty {
             queryItems.append(URLQueryItem(name: "body", value: body))
@@ -128,3 +133,4 @@ class EmailService {
         return true
     }
 }
+
