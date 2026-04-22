@@ -85,6 +85,7 @@ Thanks for your work at {{company}}.
 ## Author
 
 David Coeurjolly (david.coeurjolly@cnrs.fr)
+Bertrand Kerautret (bertrand.kerautret@univ-lyon2.fr)
 
 ## License
 
