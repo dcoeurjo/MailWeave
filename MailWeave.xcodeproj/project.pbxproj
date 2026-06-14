@@ -32,6 +32,7 @@
 		1A000000A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1A000000D /* MailWeave.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MailWeave.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A000000E /* MailWeave.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MailWeave.entitlements; sourceTree = "<group>"; };
+		715093442FDF04C200AD37F0 /* ARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ARCHITECTURE.md; sourceTree = "<group>"; };
 		71BEA5142F4B371900825E5D /* Changelog.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Changelog.md; sourceTree = "<group>"; };
 		71C15D482F41F29D00333D15 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		71C15D4C2F41FEE300333D15 /* MailWeave.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = MailWeave.xcodeproj; sourceTree = "<group>"; };
@@ -57,6 +58,7 @@
 				71BEA5142F4B371900825E5D /* Changelog.md */,
 				1A0000012 /* Products */,
 				7192A9DA2F425A3300A401CB /* Preview Content */,
+				715093442FDF04C200AD37F0 /* ARCHITECTURE.md */,
 			);
 			sourceTree = "<group>";
 		};
