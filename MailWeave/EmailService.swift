@@ -132,5 +132,84 @@ class EmailService {
         
         return true
     }
+  
+  
+  private func createAndSendEmailInMailApp(to: String, cc: String, replyTo: String, subject: String, body: String) -> Bool {
+      let toList = to
+          .replacingOccurrences(of: ";", with: ",")
+          .split(separator: ",")
+          .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+          .filter { !$0.isEmpty }
+
+      let ccList = cc
+          .replacingOccurrences(of: ";", with: ",")
+          .split(separator: ",")
+          .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+          .filter { !$0.isEmpty }
+
+      guard !toList.isEmpty else { return false }
+
+      func esc(_ s: String) -> String {
+          s.replacingOccurrences(of: "\\", with: "\\\\")
+           .replacingOccurrences(of: "\"", with: "\\\"")
+      }
+
+      // Convertit le corps Markdown en RTF hexadécimal
+   
+    
+      var script = """
+      tell application "Mail"
+          set newMessage to make new outgoing message with properties {subject:"\(esc(subject))", visible:true}
+          tell newMessage
+        set content to "\(esc(body))"
+      """
+
+      for recipient in toList {
+          script += """
+
+              make new to recipient at end of to recipients with properties {address:"\(esc(recipient))"}
+          """
+      }
+
+      for recipient in ccList {
+          script += """
+
+              make new cc recipient at end of cc recipients with properties {address:"\(esc(recipient))"}
+          """
+      }
+
+    
+
+      script += """
+
+          end tell
+          activate
+          delay 1
+
+          send newMessage
+      end tell
+      
+      """
+
+      var executionError: NSDictionary?
+      guard let appleScript = NSAppleScript(source: script) else { return false }
+
+      var success = false
+      if Thread.isMainThread {
+          appleScript.executeAndReturnError(&executionError)
+          success = executionError == nil
+      } else {
+          DispatchQueue.main.sync {
+              appleScript.executeAndReturnError(&executionError)
+              success = executionError == nil
+          }
+      }
+
+      if let error = executionError {
+          print("AppleScript error: \(error)")
+      }
+
+      return success
+  }
 }
 
