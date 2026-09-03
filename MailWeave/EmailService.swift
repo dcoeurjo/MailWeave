@@ -2,7 +2,7 @@ import Foundation
 import AppKit
 
 class EmailService {
-    func sendEmails(to recipients: [Recipient], subject: String, cc: String, replyTo: String, completion: @escaping ([Bool]) -> Void) {
+  func sendEmails(to recipients: [Recipient], subject: String, cc: String, replyTo: String, completion: @escaping ([Bool]) -> Void, composeOnly: Bool = true) {
         var results: [Bool] = []
         
         // Send emails asynchronously to avoid blocking the UI
@@ -11,14 +11,25 @@ class EmailService {
                 let resolvedSubject = self.personalizeMessage(subject, fields: recipient.fields)
                 let resolvedCc = self.personalizeMessage(cc, fields: recipient.fields)
                 let body = self.personalizeMessage(recipient.message, fields: recipient.fields)
+              if composeOnly {
                 let success = self.createEmailInMailApp(
-                    to: recipient.email,
-                    cc: resolvedCc,
-                    replyTo: replyTo,
-                    subject: resolvedSubject,
-                    body: body
-                )
-                results.append(success)
+                      to: recipient.email,
+                      cc: resolvedCc,
+                      replyTo: replyTo,
+                      subject: resolvedSubject,
+                      body: body
+                  )
+                  results.append(success)
+              }else {
+                let success = self.createAndSendEmailInMailApp(
+                      to: recipient.email,
+                      cc: resolvedCc,
+                      replyTo: replyTo,
+                      subject: resolvedSubject,
+                      body: body
+                  )
+                  results.append(success)
+              }
                 
                 // Small delay to prevent overwhelming the system
                 Thread.sleep(forTimeInterval: 0.5)

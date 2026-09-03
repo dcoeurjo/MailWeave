@@ -72,6 +72,8 @@ struct ContentView: View {
     @State private var ccList: String = ""
     @State private var isImporting = false
     @State private var showAlert = false
+    @State private var showConfirm = false
+
     @State private var alertMessage = ""
     @State private var delimiterOption: DelimiterOption = .semicolon
     @State private var customDelimiter: String = ""
@@ -130,7 +132,9 @@ struct ContentView: View {
                     ccList: $ccList,
                     replyMail: $replyMail,
                     onBack: { flowStep = .importStep },
-                    onSend: sendEmails
+                    onSend: { alertMessage = "Are your sure? This action will send all the emails ? (note that the reply to field could not be included)"; showConfirm = true },
+                    onCompose: composeEmails
+                    
                 )
             }
             
@@ -152,6 +156,12 @@ struct ContentView: View {
         )
         .alert("MailWeave", isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
+        }
+        .alert("MailWeave", isPresented: $showConfirm) {
+          Button("OK", role: .none) { sendEmails() }
+          Button("Cancel", role: .cancel) { }
         } message: {
             Text(alertMessage)
         }
@@ -216,24 +226,45 @@ struct ContentView: View {
         
       
         let emailService = EmailService()
-        emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replyMail) { results in
-            let successCount = results.filter { $0 }.count
-            let failureCount = results.count - successCount
-            
-            if failureCount != 0 {
-                self.alertMessage = "Successfully created \(successCount) emails in Mail.app"
-            } else {
-                self.alertMessage = "Created \(successCount) emails. Failed: \(failureCount)"
-            }
-            self.showAlert = true
+      emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replyMail, completion:  { results in
+        let successCount = results.filter { $0 }.count
+        let failureCount = results.count - successCount
+        if failureCount != 0 {
+          self.alertMessage = "Created \(successCount) emails. Failed: \(failureCount)"
+          self.showAlert = true
         }
+      }, composeOnly: false)
     }
 
-    private var canProceedToCompose: Bool {
-        !importedRows.isEmpty &&
-        !selectedEmailHeader.isEmpty &&
-        (messageMode == .global || !selectedMessageHeader.isEmpty)
-    }
+   
+  func composeEmails() {
+      let selectedRecipients = recipients.filter { $0.selected }
+      
+      if selectedRecipients.isEmpty {
+          alertMessage = "Please select at least one recipient"
+          showAlert = true
+          return
+      }
+      
+    
+      let emailService = EmailService()
+      emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replyMail, completion:  { results in
+      let successCount = results.filter { $0 }.count
+      let failureCount = results.count - successCount
+      
+      if failureCount != 0 {
+        self.alertMessage = "Created \(successCount) emails. Failed: \(failureCount)"
+        self.showAlert = true
+      }
+
+    }, composeOnly: true)
+  }
+
+  private var canProceedToCompose: Bool {
+      !importedRows.isEmpty &&
+      !selectedEmailHeader.isEmpty &&
+      (messageMode == .global || !selectedMessageHeader.isEmpty)
+  }
 
     private var currentWindowHeight: CGFloat {
         if flowStep == .composeStep {
@@ -534,6 +565,7 @@ private struct ComposeView: View {
     @Binding var replyMail: String
     let onBack: () -> Void
     let onSend: () -> Void
+    let onCompose: () -> Void
     @State private var indexFirst50 = 0
     private var availableHeaders: [String] {
         let csvHeaderSet = Set(parsedHeaders)
@@ -662,25 +694,47 @@ private struct ComposeView: View {
             }
             .padding(.bottom)
               // Send Button
-      Button(action: onSend) {
+      HStack{
+        Button(action: onCompose) {
           HStack {
-              Image(systemName: "envelope")
-              Text("Send Emails (\(recipients.filter { $0.selected }.count))")
+            Image(systemName: "square.and.pencil")
+            Text("Compose Emails (\(recipients.filter { $0.selected }.count))")
           }
           .frame(maxWidth: .infinity)
           .padding()
-        
-      }
-      .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
-      .foregroundColor(.white)
-      .cornerRadius(8)
-      .disabled(recipients.filter { $0.selected }.isEmpty)
-      .padding(.horizontal)
-        .onAppear {
-            if messageMode == .global {
-                applyGlobalMessage()
-            }
+          
         }
+        .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
+          .foregroundColor(.white)
+          .cornerRadius(8)
+          .disabled(recipients.filter { $0.selected }.isEmpty)
+          .padding(.horizontal)
+            .onAppear {
+                if messageMode == .global {
+                    applyGlobalMessage()
+                }
+            }
+        Button(action: onSend) {
+            HStack {
+                Image(systemName: "envelope")
+                Text("Send Emails (\(recipients.filter { $0.selected }.count))")
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+          
+        }
+        .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
+        .foregroundColor(.white)
+        .cornerRadius(8)
+        .disabled(recipients.filter { $0.selected }.isEmpty)
+        .padding(.horizontal)
+          .onAppear {
+              if messageMode == .global {
+                  applyGlobalMessage()
+              }
+          }
+      }
+      
     }
 
     private func applyGlobalMessage() {

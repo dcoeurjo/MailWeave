@@ -354,7 +354,7 @@
 				INFOPLIST_FILE = MailWeave/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = MailWeave;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Pour Mail App";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "In order to send email using AppleScript";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
