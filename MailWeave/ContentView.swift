@@ -562,6 +562,7 @@ private struct ImportView: View {
 }
 
 private struct ComposeView: View {
+    
     @Binding var recipients: [Recipient]
     let parsedHeaders: [String]
     let messageMode: MessageMode
@@ -571,6 +572,9 @@ private struct ComposeView: View {
     @Binding var replyMail: String
     @Binding var attachedFileNames: String
     @Binding var attachedDirPath: String
+
+    @State var appleScriptMode: Bool = false
+  @State private var showAutomationAlert = false
 
     let onBack: () -> Void
     let onSend: () -> Void
@@ -615,30 +619,62 @@ private struct ComposeView: View {
                   }
               }
               Spacer()
+              // add switch to toggle mode
+            Toggle("AppleScript mode:", isOn: $appleScriptMode)
+                .toggleStyle(.switch)
+                .padding()
+                .onChange(of: appleScriptMode) { newValue in
+
+                    guard newValue else {
+                        return
+                    }
+
+                    checkMailAutomationPermission { authorized in
+
+                        if !authorized {
+                            appleScriptMode = false
+                            showAutomationAlert = true
+                        }
+                    }
+                }
+                .alert(
+                    "AppleScript access required",
+                    isPresented: $showAutomationAlert
+                ) {
+                    Button("OK", role: .cancel) { }
+                } message: {
+                    Text("""
+                    Please allow this application to control Mail in
+                    System Settings → Privacy & Security → Automation.
+                    """)
+                }
+                
           }
           .padding(.horizontal)
           
-          VStack(alignment: .leading, spacing: 8) {
-            HStack{
-              Text("Email Subject")
-                .font(.headline)
-              TextField("Subject", text: $emailSubject)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: emailSubject) { _ in
-                  applyGlobalSubject()
-                }
-            }
-            HStack{  Text("CC (comma-separated)")
-                .font(.headline)
-              HStack{   TextField("email@example.com, email2@example.com", text: $ccList)
-                  .textFieldStyle(.roundedBorder)
+        VStack(alignment: .leading, spacing: 8) {
+          HStack{
+            Text("Email Subject")
+              .font(.headline)
+            TextField("Subject", text: $emailSubject)
+              .textFieldStyle(.roundedBorder)
+              .onChange(of: emailSubject) { _ in
+                applyGlobalSubject()
               }
-            }
-            HStack{                Text("Reply to")
-                .font(.headline)
-              TextField("email@example.com, email2@example.com", text: $replyMail)
+          }
+          HStack{  Text("CC (comma-separated)")
+              .font(.headline)
+            HStack{   TextField("email@example.com, email2@example.com", text: $ccList)
                 .textFieldStyle(.roundedBorder)
             }
+          }
+          if !appleScriptMode {
+            Text("Reply to")
+              .font(.headline)
+            TextField("email@example.com, email2@example.com", text: $replyMail)
+              .textFieldStyle(.roundedBorder)
+          }
+        
           }
           .padding(.horizontal)
           
@@ -665,35 +701,35 @@ private struct ComposeView: View {
                       .foregroundColor(.secondary)
               }
             VStack(alignment: .leading, spacing: 8) {
-          
+              if appleScriptMode {
                 HStack {
                   Text("Attachement file directory")
-                      .font(.headline)
-
+                    .font(.headline)
+                  
                   TextField("Sélectionner un répertoire…", text: $attachedDirPath)
-                        .textFieldStyle(.roundedBorder)
-                        .disabled(true)
-                        .onChange(of: attachedDirPath) { _ in
-                          applyGlobalAttach()
-                        }
-                    Button {
-                        let panel = NSOpenPanel()
-                        panel.canChooseFiles = false
-                        panel.canChooseDirectories = true
-                        panel.allowsMultipleSelection = false
-                        panel.canCreateDirectories = true
-                        panel.prompt = "Sélectionner"
-                        if panel.runModal() == .OK,
-                           let url = panel.url {
-                            attachedDirPath = url.path
-                            // Important pour le Sandbox macOS
-                            _ = url.startAccessingSecurityScopedResource()
-                            applyGlobalSubject()
-                        }
-                    } label: {
-                        Image(systemName: "folder")
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(true)
+                    .onChange(of: attachedDirPath) { _ in
+                      applyGlobalAttach()
                     }
-                    .help("Sélectionner le répertoire de l'attachement")
+                  Button {
+                    let panel = NSOpenPanel()
+                    panel.canChooseFiles = false
+                    panel.canChooseDirectories = true
+                    panel.allowsMultipleSelection = false
+                    panel.canCreateDirectories = true
+                    panel.prompt = "Sélectionner"
+                    if panel.runModal() == .OK,
+                       let url = panel.url {
+                      attachedDirPath = url.path
+                      // Important pour le Sandbox macOS
+                      _ = url.startAccessingSecurityScopedResource()
+                      applyGlobalSubject()
+                    }
+                  } label: {
+                    Image(systemName: "folder")
+                  }
+                  .help("Sélectionner le répertoire de l'attachement")
                   Text("filename")
                     .font(.headline)
                   TextField("Filename", text: $attachedFileNames)
@@ -701,7 +737,9 @@ private struct ComposeView: View {
                     .onChange(of: attachedFileNames) { _ in
                       applyGlobalAttach()
                     }
+                  
                 }
+              }
             }
           }
           .padding(.horizontal)
@@ -771,10 +809,10 @@ private struct ComposeView: View {
             .padding()
           
         }
-        .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
+        .background(recipients.filter { $0.selected }.isEmpty || !appleScriptMode ? Color.gray : Color.green)
         .foregroundColor(.white)
         .cornerRadius(8)
-        .disabled(recipients.filter { $0.selected }.isEmpty)
+        .disabled(recipients.filter { $0.selected }.isEmpty || !appleScriptMode)
         .padding(.horizontal)
           .onAppear {
               if messageMode == .global {
@@ -883,15 +921,16 @@ struct RecipientRow: View {
                   .padding(8)
                   .background(Color.gray.opacity(0.08))
                   .cornerRadius(6)
-                Text("Attachment path:")
+                if personalizedAttachmentFilePath != "" {
+                  Text("Attachment path:")
                     .font(.caption)
                     .foregroundColor(.gray)
-                Text(personalizedAttachmentFilePath)
-                  .frame(maxWidth: .infinity, alignment: .leading)
-                  .padding(8)
-                  .background(Color.gray.opacity(0.08))
-                  .cornerRadius(6)
-
+                  Text(personalizedAttachmentFilePath)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+                    .background(Color.gray.opacity(0.08))
+                    .cornerRadius(6)
+                }
               }
             }
         }
@@ -903,5 +942,6 @@ struct RecipientRow: View {
 
 #Preview {
     ContentView()
+    
 }
 
