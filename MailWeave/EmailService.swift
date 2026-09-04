@@ -2,7 +2,7 @@ import Foundation
 import AppKit
 
 class EmailService {
-  func sendEmails(to recipients: [Recipient], subject: String, cc: String, replyTo: String, completion: @escaping ([Bool]) -> Void, composeOnly: Bool = true) {
+  func sendEmails(to recipients: [Recipient], subject: String, cc: String, replyTo: String, completion: @escaping ([Bool]) -> Void, composeOnly: Bool = true, attachPath: String? = nil) {
         var results: [Bool] = []
         
         // Send emails asynchronously to avoid blocking the UI
@@ -26,7 +26,7 @@ class EmailService {
                       cc: resolvedCc,
                       replyTo: replyTo,
                       subject: resolvedSubject,
-                      body: body
+                      body: body, attachmentPath: attachPath
                   )
                   results.append(success)
               }
@@ -145,7 +145,8 @@ class EmailService {
     }
   
   
-  private func createAndSendEmailInMailApp(to: String, cc: String, replyTo: String, subject: String, body: String) -> Bool {
+  private func createAndSendEmailInMailApp(to: String, cc: String, replyTo: String, subject: String,
+                                           body: String, attachmentPath: String?) -> Bool {
       let toList = to
           .replacingOccurrences(of: ";", with: ",")
           .split(separator: ",")
@@ -175,6 +176,15 @@ class EmailService {
         set content to "\(esc(body))"
       """
 
+      if let path = attachmentPath  {
+        script += """
+
+        tell content of newMessage
+            make new attachment with properties {file name:"\(path)"} at after the last paragraph
+        end tell
+        """
+    }
+    
       for recipient in toList {
           script += """
 

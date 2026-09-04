@@ -3,13 +3,14 @@ import UniformTypeIdentifiers
 import AppKit
 
 struct Recipient: Identifiable, Codable {
-    var id = UUID()
-    var name: String
-    var email: String
-    var message: String
-    var subject: String
-    var fields: [String: String]
-    var selected: Bool = true
+  var id = UUID()
+  var name: String
+  var email: String
+  var message: String
+  var subject: String
+  var fields: [String: String]
+  var selected: Bool = true
+  var attachment: String
 }
 
 private enum DelimiterOption: String, CaseIterable, Identifiable {
@@ -81,6 +82,10 @@ struct ContentView: View {
     @State private var importedRows: [[String: String]] = []
     @State private var selectedEmailHeader: String = ""
     @State private var selectedMessageHeader: String = ""
+
+    @State private var selectedAttachementsPath: String = ""
+    @State private var selectedDirPath: String = ""
+
     @State private var messageMode: MessageMode = .global
     @State private var importContentHeight: CGFloat = 0
     @State private var flowStep: FlowStep = .importStep
@@ -130,7 +135,7 @@ struct ContentView: View {
                     defaultMessage: $defaultMessage,
                     emailSubject: $emailSubject,
                     ccList: $ccList,
-                    replyMail: $replyMail,
+                    replyMail: $replyMail, attachedFileNames: $selectedAttachementsPath, attachedDirPath: $selectedDirPath,
                     onBack: { flowStep = .importStep },
                     onSend: { alertMessage = "Are your sure? This action will send all the emails ? (note that the reply to field could not be included)"; showConfirm = true },
                     onCompose: composeEmails
@@ -233,7 +238,7 @@ struct ContentView: View {
           self.alertMessage = "Created \(successCount) emails. Failed: \(failureCount)"
           self.showAlert = true
         }
-      }, composeOnly: false)
+      }, composeOnly: false, attachPath: selectedDirPath + "/" + selectedAttachementsPath)
     }
 
    
@@ -340,7 +345,8 @@ struct ContentView: View {
             fields["message"] = message
             fields["name"] = name
 
-          mapped.append(Recipient(name: name, email: email, message: message, subject: messageSubject, fields: fields))
+          mapped.append(Recipient(name: name, email: email, message: message,
+                                  subject: messageSubject, fields: fields, attachment: selectedAttachementsPath))
         }
 
         return mapped
@@ -563,6 +569,9 @@ private struct ComposeView: View {
     @Binding var emailSubject: String
     @Binding var ccList: String
     @Binding var replyMail: String
+    @Binding var attachedFileNames: String
+    @Binding var attachedDirPath: String
+
     let onBack: () -> Void
     let onSend: () -> Void
     let onCompose: () -> Void
@@ -655,6 +664,45 @@ private struct ComposeView: View {
                       .font(.caption)
                       .foregroundColor(.secondary)
               }
+            VStack(alignment: .leading, spacing: 8) {
+          
+                HStack {
+                  Text("Attachement file directory")
+                      .font(.headline)
+
+                  TextField("Sélectionner un répertoire…", text: $attachedDirPath)
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(true)
+                        .onChange(of: attachedDirPath) { _ in
+                          applyGlobalAttach()
+                        }
+                    Button {
+                        let panel = NSOpenPanel()
+                        panel.canChooseFiles = false
+                        panel.canChooseDirectories = true
+                        panel.allowsMultipleSelection = false
+                        panel.canCreateDirectories = true
+                        panel.prompt = "Sélectionner"
+                        if panel.runModal() == .OK,
+                           let url = panel.url {
+                            attachedDirPath = url.path
+                            // Important pour le Sandbox macOS
+                            _ = url.startAccessingSecurityScopedResource()
+                            applyGlobalSubject()
+                        }
+                    } label: {
+                        Image(systemName: "folder")
+                    }
+                    .help("Sélectionner le répertoire de l'attachement")
+                  Text("filename")
+                    .font(.headline)
+                  TextField("Filename", text: $attachedFileNames)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: attachedFileNames) { _ in
+                      applyGlobalAttach()
+                    }
+                }
+            }
           }
           .padding(.horizontal)
           
@@ -742,11 +790,16 @@ private struct ComposeView: View {
             recipients[index].message = defaultMessage
         }
     }
-   private func applyGlobalSubject() {
-      for index in recipients.indices {
-          recipients[index].subject = emailSubject
-      }
-  }
+  private func applyGlobalSubject() {
+     for index in recipients.indices {
+         recipients[index].subject = emailSubject
+     }
+ }
+  private func applyGlobalAttach() {
+     for index in recipients.indices {
+         recipients[index].attachment = attachedDirPath+"/"+attachedFileNames
+     }
+ }
 
     private func setAllRecipientsSelected(_ isSelected: Bool) {
         for index in recipients.indices {
@@ -770,7 +823,9 @@ struct RecipientRow: View {
     @Binding var recipient: Recipient
     let allowMessageEditing: Bool
     @State private var isExpanded = false
-
+  private var personalizedAttachmentFilePath: String {
+    EmailService().personalizeMessage(recipient.attachment, fields: recipient.fields)
+  }
     private var personalizedMessage: String {
         EmailService().personalizeMessage(recipient.message, fields: recipient.fields)
     }
@@ -800,35 +855,44 @@ struct RecipientRow: View {
             }
             
             if isExpanded {
-                VStack(alignment: .leading, spacing: 4) {
-                    if allowMessageEditing {
-                        Text("Template:")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-
-                        TextEditor(text: $recipient.message)
-                            .frame(height: 80)
-                            .border(Color.gray.opacity(0.5))
-                    }
-
-                    Text("Subject preview:")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                   Text(personalizedSubject)
-                      .frame(maxWidth: .infinity, alignment: .leading)
-                      .padding(8)
-                      .background(Color.gray.opacity(0.08))
-                      .cornerRadius(6)
-                  Text("Content preview:")
-                      .font(.caption)
-                      .foregroundColor(.gray)
- 
-                  Text(personalizedMessage)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(8)
-                        .background(Color.gray.opacity(0.08))
-                        .cornerRadius(6)
+              VStack(alignment: .leading, spacing: 4) {
+                if allowMessageEditing {
+                  Text("Template:")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                  
+                  TextEditor(text: $recipient.message)
+                    .frame(height: 80)
+                    .border(Color.gray.opacity(0.5))
                 }
+                
+                Text("Subject preview:")
+                  .font(.caption)
+                  .foregroundColor(.gray)
+                Text(personalizedSubject)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .padding(8)
+                  .background(Color.gray.opacity(0.08))
+                  .cornerRadius(6)
+                Text("Content preview:")
+                  .font(.caption)
+                  .foregroundColor(.gray)
+                
+                Text(personalizedMessage)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .padding(8)
+                  .background(Color.gray.opacity(0.08))
+                  .cornerRadius(6)
+                Text("Attachment path:")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                Text(personalizedAttachmentFilePath)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .padding(8)
+                  .background(Color.gray.opacity(0.08))
+                  .cornerRadius(6)
+
+              }
             }
         }
         .padding()
