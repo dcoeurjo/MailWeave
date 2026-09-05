@@ -6,11 +6,14 @@ struct Recipient: Identifiable, Codable {
   var id = UUID()
   var name: String
   var email: String
+  var emailCC: String
+  var emailRT: String
   var message: String
   var subject: String
   var fields: [String: String]
   var selected: Bool = true
   var attachment: String
+  
 }
 
 private enum DelimiterOption: String, CaseIterable, Identifiable {
@@ -71,6 +74,7 @@ struct ContentView: View {
     @State private var replyMail: String = ""
 
     @State private var ccList: String = ""
+    @State private var rtList: String = ""
     @State private var isImporting = false
     @State private var showAlert = false
     @State private var showConfirm = false
@@ -345,7 +349,8 @@ struct ContentView: View {
             fields["message"] = message
             fields["name"] = name
 
-          mapped.append(Recipient(name: name, email: email, message: message,
+          mapped.append(Recipient(name: name, email: email, emailCC: ccList,
+                                  emailRT: rtList, message: message,
                                   subject: messageSubject, fields: fields, attachment: selectedAttachementsPath))
         }
 
@@ -574,7 +579,7 @@ private struct ComposeView: View {
     @Binding var attachedDirPath: String
 
     @State var appleScriptMode: Bool = false
-  @State private var showAutomationAlert = false
+    @State private var showAutomationAlert = false
 
     let onBack: () -> Void
     let onSend: () -> Void
@@ -666,13 +671,21 @@ private struct ComposeView: View {
               .font(.headline)
             HStack{   TextField("email@example.com, email2@example.com", text: $ccList)
                 .textFieldStyle(.roundedBorder)
+                .onChange(of: ccList) { _ in
+                    applyGlobalCC()
+                }
             }
           }
           if !appleScriptMode {
-            Text("Reply to")
-              .font(.headline)
-            TextField("email@example.com, email2@example.com", text: $replyMail)
-              .textFieldStyle(.roundedBorder)
+            HStack{
+              Text("Reply to")
+                .font(.headline)
+              TextField("email@example.com, email2@example.com", text: $replyMail)
+                .textFieldStyle(.roundedBorder)
+                .onChange(of: replyMail) { _ in
+                  applyGlobalRT()
+                }
+            }
           }
         
           }
@@ -688,6 +701,8 @@ private struct ComposeView: View {
                       .foregroundColor(.secondary)
                   TextEditor(text: $defaultMessage)
                       .frame(height: 140)
+                      .padding(8)
+
                       .border(Color.gray.opacity(0.5))
                       .onChange(of: defaultMessage) { _ in
                           applyGlobalMessage()
@@ -768,7 +783,7 @@ private struct ComposeView: View {
                         VStack(spacing: 10) {
                             ForEach($recipients) { $recipient in
                                 RecipientRow(
-                                    recipient: $recipient,
+                                  recipient: $recipient, appleScriptMode: $appleScriptMode,
                                     allowMessageEditing: messageMode == .perRecipient
                                 )
                             }
@@ -838,7 +853,16 @@ private struct ComposeView: View {
          recipients[index].attachment = attachedDirPath+"/"+attachedFileNames
      }
  }
-
+  private func applyGlobalCC() {
+      for index in recipients.indices {
+          recipients[index].emailCC = ccList
+      }
+  }
+  private func applyGlobalRT() {
+      for index in recipients.indices {
+          recipients[index].emailRT = replyMail
+      }
+  }
     private func setAllRecipientsSelected(_ isSelected: Bool) {
         for index in recipients.indices {
             recipients[index].selected = isSelected
@@ -859,18 +883,25 @@ private struct ComposeView: View {
 
 struct RecipientRow: View {
     @Binding var recipient: Recipient
+    @Binding var appleScriptMode: Bool
     let allowMessageEditing: Bool
     @State private var isExpanded = false
-  private var personalizedAttachmentFilePath: String {
-    EmailService().personalizeMessage(recipient.attachment, fields: recipient.fields)
-  }
+    private var personalizedAttachmentFilePath: String {
+      EmailService().personalizeMessage(recipient.attachment, fields: recipient.fields)
+    }
     private var personalizedMessage: String {
         EmailService().personalizeMessage(recipient.message, fields: recipient.fields)
     }
     private var personalizedSubject: String {
       EmailService().personalizeMessage(recipient.subject, fields: recipient.fields)
     }
-    
+    private var personalizedCC: String {
+      EmailService().personalizeMessage(recipient.emailCC, fields: recipient.fields)
+    }
+    private var personalizedRT: String {
+      EmailService().personalizeMessage(recipient.emailRT, fields: recipient.fields)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -903,8 +934,23 @@ struct RecipientRow: View {
                     .frame(height: 80)
                     .border(Color.gray.opacity(0.5))
                 }
-                
-                Text("Subject preview:")
+                HStack(alignment: .firstTextBaseline){
+                  Text("CC:")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                  Text(personalizedCC)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                if !appleScriptMode {
+                  HStack(alignment: .firstTextBaseline){
+                    Text("Reply To:")
+                      .font(.caption)
+                      .foregroundColor(.gray)
+                    Text(personalizedRT)
+                      .frame(maxWidth: .infinity, alignment: .leading)
+                  }
+                }
+                  Text("Subject preview:")
                   .font(.caption)
                   .foregroundColor(.gray)
                 Text(personalizedSubject)
