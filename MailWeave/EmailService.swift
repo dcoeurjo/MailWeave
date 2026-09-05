@@ -11,6 +11,10 @@ class EmailService {
                 let resolvedSubject = self.personalizeMessage(subject, fields: recipient.fields)
                 let resolvedCc = self.personalizeMessage(cc, fields: recipient.fields)
                 let body = self.personalizeMessage(recipient.message, fields: recipient.fields)
+                let path = self.personalizeMessage(recipient.attachment,
+                                                   fields: recipient.fields)
+
+
               if composeOnly {
                 let success = self.createEmailInMailApp(
                       to: recipient.email,
@@ -26,7 +30,7 @@ class EmailService {
                       cc: resolvedCc,
                       replyTo: replyTo,
                       subject: resolvedSubject,
-                      body: body, attachmentPath: attachPath
+                      body: body, attachmentPath: path
                   )
                   results.append(success)
               }

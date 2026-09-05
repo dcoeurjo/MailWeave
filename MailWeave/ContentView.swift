@@ -233,16 +233,15 @@ struct ContentView: View {
             return
         }
         
-      
         let emailService = EmailService()
-      emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replyMail, completion:  { results in
-        let successCount = results.filter { $0 }.count
-        let failureCount = results.count - successCount
-        if failureCount != 0 {
-          self.alertMessage = "Created \(successCount) emails. Failed: \(failureCount)"
-          self.showAlert = true
-        }
-      }, composeOnly: false, attachPath: selectedDirPath + "/" + selectedAttachementsPath)
+        emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replyMail, completion:  { results in
+            let successCount = results.filter { $0 }.count
+            let failureCount = results.count - successCount
+            if failureCount != 0 {
+                self.alertMessage = "Created \(successCount) emails. Failed: \(failureCount)"
+                self.showAlert = true
+            }
+        }, composeOnly: false, attachPath: selectedDirPath + "/" + selectedAttachementsPath)
     }
 
    
@@ -351,7 +350,7 @@ struct ContentView: View {
 
           mapped.append(Recipient(name: name, email: email, emailCC: ccList,
                                   emailRT: rtList, message: message,
-                                  subject: messageSubject, fields: fields, attachment: selectedAttachementsPath))
+                                  subject: messageSubject, fields: fields, attachment: selectedDirPath + "/" + selectedAttachementsPath))
         }
 
         return mapped
@@ -967,7 +966,7 @@ struct RecipientRow: View {
                   .padding(8)
                   .background(Color.gray.opacity(0.08))
                   .cornerRadius(6)
-                if personalizedAttachmentFilePath != "" {
+                if appleScriptMode {
                   Text("Attachment path:")
                     .font(.caption)
                     .foregroundColor(.gray)
