@@ -2,49 +2,93 @@ import Foundation
 import AppKit
 
 class EmailService {
-  func sendEmails(to recipients: [Recipient], subject: String, cc: String, replyTo: String, completion: @escaping ([Bool]) -> Void, composeOnly: Bool = true, attachPath: String? = nil) {
-        var results: [Bool] = []
-        
-        // Send emails asynchronously to avoid blocking the UI
+ 
+    func sendEmails(
+        to recipients: [Recipient],
+        subject: String,
+        cc: String,
+        replyTo: String,
+        completion: @escaping ([Bool]) -> Void,
+        progress: @escaping (Int, Int) -> Void,
+        composeOnly: Bool = true,
+        attachPath: String? = nil,
+        isCancelled: @escaping () -> Bool
+    ) {
+
         DispatchQueue.global(qos: .userInitiated).async {
-            for recipient in recipients {
-                let resolvedSubject = self.personalizeMessage(subject, fields: recipient.fields)
-                let resolvedCc = self.personalizeMessage(cc, fields: recipient.fields)
-                let body = self.personalizeMessage(recipient.message, fields: recipient.fields)
-                let path = self.personalizeMessage(recipient.attachment,
-                                                   fields: recipient.fields)
 
+            var results: [Bool] = []
 
-              if composeOnly {
-                let success = self.createEmailInMailApp(
-                      to: recipient.email,
-                      cc: resolvedCc,
-                      replyTo: replyTo,
-                      subject: resolvedSubject,
-                      body: body
-                  )
-                  results.append(success)
-              }else {
-                let success = self.createAndSendEmailInMailApp(
-                      to: recipient.email,
-                      cc: resolvedCc,
-                      replyTo: replyTo,
-                      subject: resolvedSubject,
-                      body: body, attachmentPath: path
-                  )
-                  results.append(success)
-              }
-                
-                // Small delay to prevent overwhelming the system
+            let total = recipients.count
+
+            for (index, recipient) in recipients.enumerated() {
+                if isCancelled() {
+                    break
+                }
+                let resolvedSubject = self.personalizeMessage(
+                    subject,
+                    fields: recipient.fields
+                )
+
+                let resolvedCc = self.personalizeMessage(
+                    cc,
+                    fields: recipient.fields
+                )
+
+                let body = self.personalizeMessage(
+                    recipient.message,
+                    fields: recipient.fields
+                )
+
+                let path = self.personalizeMessage(
+                    recipient.attachment,
+                    fields: recipient.fields
+                )
+
+                let success: Bool
+
+                if composeOnly {
+
+                    success = self.createEmailInMailApp(
+                        to: recipient.email,
+                        cc: resolvedCc,
+                        replyTo: replyTo,
+                        subject: resolvedSubject,
+                        body: body
+                    )
+
+                } else {
+
+                    success = self.createAndSendEmailInMailApp(
+                        to: recipient.email,
+                        cc: resolvedCc,
+                        replyTo: replyTo,
+                        subject: resolvedSubject,
+                        body: body,
+                        attachmentPath: path
+                    )
+                }
+
+                results.append(success)
+
+                // Mise à jour de la progression sur le thread principal
+                let current = index + 1
+
+                DispatchQueue.main.async {
+                    progress(current, total)
+                }
+
+                // Petite pause entre deux mails
                 Thread.sleep(forTimeInterval: 0.5)
             }
-            
-            // Call completion handler on main thread
+
+            // Fin du traitement
             DispatchQueue.main.async {
                 completion(results)
             }
         }
     }
+
     
     func personalizeMessage(_ message: String, fields: [String: String]) -> String {
         let normalizedFields = normalizeFieldMap(fields)
@@ -208,9 +252,7 @@ class EmailService {
       script += """
 
           end tell
-          activate
-          delay 1
-
+          delay 0.3
           send newMessage
       end tell
       
@@ -219,22 +261,13 @@ class EmailService {
       var executionError: NSDictionary?
       guard let appleScript = NSAppleScript(source: script) else { return false }
 
-      var success = false
-      if Thread.isMainThread {
-          appleScript.executeAndReturnError(&executionError)
-          success = executionError == nil
-      } else {
-          DispatchQueue.main.sync {
-              appleScript.executeAndReturnError(&executionError)
-              success = executionError == nil
-          }
-      }
-
+      appleScript.executeAndReturnError(&executionError)
+     
       if let error = executionError {
           print("AppleScript error: \(error)")
       }
 
-      return success
+      return executionError == nil
   }
 }
 
