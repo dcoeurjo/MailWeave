@@ -2,7 +2,10 @@
 
 ## [Unreleased]
 
+
 ## [0.4] - 2026-06-06
+- Add AppleScript mode for automatic email sending and attachment support.
+- Add CC and ReplyTo in mail preview.
 - Add button to select the next 50 recipients (after clicking first on "Unselect all").
 
 ## [0.3] - 2026-04-18

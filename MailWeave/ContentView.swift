@@ -3,13 +3,17 @@ import UniformTypeIdentifiers
 import AppKit
 
 struct Recipient: Identifiable, Codable {
-    var id = UUID()
-    var name: String
-    var email: String
-    var message: String
-    var subject: String
-    var fields: [String: String]
-    var selected: Bool = true
+  var id = UUID()
+  var name: String
+  var email: String
+  var emailCC: String
+  var emailRT: String
+  var message: String
+  var subject: String
+  var fields: [String: String]
+  var selected: Bool = true
+  var attachment: String
+  
 }
 
 private enum DelimiterOption: String, CaseIterable, Identifiable {
@@ -70,8 +74,11 @@ struct ContentView: View {
     @State private var replyMail: String = ""
 
     @State private var ccList: String = ""
+    @State private var rtList: String = ""
     @State private var isImporting = false
     @State private var showAlert = false
+    @State private var showConfirm = false
+
     @State private var alertMessage = ""
     @State private var delimiterOption: DelimiterOption = .semicolon
     @State private var customDelimiter: String = ""
@@ -79,9 +86,19 @@ struct ContentView: View {
     @State private var importedRows: [[String: String]] = []
     @State private var selectedEmailHeader: String = ""
     @State private var selectedMessageHeader: String = ""
+
+    @State private var selectedAttachementsPath: String = ""
+    @State private var selectedDirPath: String = ""
+
     @State private var messageMode: MessageMode = .global
     @State private var importContentHeight: CGFloat = 0
     @State private var flowStep: FlowStep = .importStep
+    
+    @State private var isSending = false
+    @State private var progress = 0
+    @State private var total = 0
+    @State private var isCancelled = false
+    @State private var currentRecipientName = ""
     
     var body: some View {
         VStack(spacing: 20) {
@@ -128,9 +145,11 @@ struct ContentView: View {
                     defaultMessage: $defaultMessage,
                     emailSubject: $emailSubject,
                     ccList: $ccList,
-                    replyMail: $replyMail,
+                    replyMail: $replyMail, attachedFileNames: $selectedAttachementsPath, attachedDirPath: $selectedDirPath,
                     onBack: { flowStep = .importStep },
-                    onSend: sendEmails
+                    onSend: { alertMessage = "Are your sure? This action will send all the emails ? (note that the reply to field could not be included)"; showConfirm = true },
+                    onCompose: composeEmails
+                    
                 )
             }
             
@@ -155,8 +174,45 @@ struct ContentView: View {
         } message: {
             Text(alertMessage)
         }
+        .alert("MailWeave", isPresented: $showConfirm) {
+          Button("OK", role: .none) { sendEmails() }
+          Button("Cancel", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
+        }
+        if isSending {
+            HStack(spacing: 12) {
+                ProgressView(
+                    value: Double(progress),
+                    total: Double(total)
+                )
+                .frame(width: 200)
+
+                HStack(spacing: 4) {
+                    Text("Sending \(progress) / \(total) to")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Text(currentRecipientName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                .frame(width: 280, alignment: .leading)
+
+                Button("Stop") {
+                    cancelSending()
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding(.horizontal)
+            .padding(8)
+        }
     }
-    
+    private func cancelSending() {
+        isCancelled = true
+    }
     func handleFileImport(_ result: Result<[URL], Error>) {
         do {
             guard let selectedFile = try result.get().first else { return }
@@ -204,36 +260,124 @@ struct ContentView: View {
        
 
     }
-    
+   
     func sendEmails() {
+
         let selectedRecipients = recipients.filter { $0.selected }
-        
-        if selectedRecipients.isEmpty {
+
+        guard !selectedRecipients.isEmpty else {
             alertMessage = "Please select at least one recipient"
             showAlert = true
             return
         }
-        
-      
+
+        // Initialisation de la progression
+        isSending = true
+        progress = 0
+        isCancelled = false
+
+        total = selectedRecipients.count
+
         let emailService = EmailService()
-        emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replyMail) { results in
-            let successCount = results.filter { $0 }.count
-            let failureCount = results.count - successCount
-            
-            if failureCount != 0 {
-                self.alertMessage = "Successfully created \(successCount) emails in Mail.app"
-            } else {
-                self.alertMessage = "Created \(successCount) emails. Failed: \(failureCount)"
-            }
-            self.showAlert = true
-        }
+
+        emailService.sendEmails(
+            to: selectedRecipients,
+            subject: emailSubject,
+            cc: ccList,
+            replyTo: replyMail,
+
+            completion: { results in
+
+                let successCount = results.filter { $0 }.count
+                let failureCount = results.count - successCount
+
+                isSending = false
+
+                if failureCount != 0 {
+                    alertMessage =
+                        "Created \(successCount) emails. Failed: \(failureCount)"
+                    showAlert = true
+                } else {
+                    alertMessage =
+                        "Successfully sent \(successCount) emails."
+                    showAlert = true
+                }
+
+                print("Terminé : \(results.count) mails")
+            },
+
+            progress: { current, total in
+                self.currentRecipientName = recipients[current].name
+                self.progress = current
+                self.total = total
+            },
+
+            composeOnly: false,
+
+            attachPath: selectedDirPath + "/" + selectedAttachementsPath,
+            isCancelled: {self.isCancelled}
+        )
     }
 
-    private var canProceedToCompose: Bool {
-        !importedRows.isEmpty &&
-        !selectedEmailHeader.isEmpty &&
-        (messageMode == .global || !selectedMessageHeader.isEmpty)
+
+   
+    func composeEmails() {
+
+        let selectedRecipients = recipients.filter { $0.selected }
+
+        guard !selectedRecipients.isEmpty else {
+            alertMessage = "Please select at least one recipient"
+            showAlert = true
+            return
+        }
+
+        // Initialisation de la progression
+        isSending = true
+        progress = 0
+        isCancelled = false
+
+        total = selectedRecipients.count
+
+        let emailService = EmailService()
+
+        emailService.sendEmails(
+            to: selectedRecipients,
+            subject: emailSubject,
+            cc: ccList,
+            replyTo: replyMail,
+
+            completion: { results in
+
+                let successCount = results.filter { $0 }.count
+                let failureCount = results.count - successCount
+
+                isSending = false
+
+                if failureCount != 0 {
+                    alertMessage =
+                        "Created \(successCount) emails. Failed: \(failureCount)"
+                    showAlert = true
+                }
+
+                print("Terminé : \(results.count) mails")
+            },
+
+            progress: { current, total in
+
+                self.progress = current
+                self.total = total
+            },
+
+            composeOnly: true,
+            isCancelled: {self.isCancelled}
+        )
     }
+
+  private var canProceedToCompose: Bool {
+      !importedRows.isEmpty &&
+      !selectedEmailHeader.isEmpty &&
+      (messageMode == .global || !selectedMessageHeader.isEmpty)
+  }
 
     private var currentWindowHeight: CGFloat {
         if flowStep == .composeStep {
@@ -309,7 +453,9 @@ struct ContentView: View {
             fields["message"] = message
             fields["name"] = name
 
-          mapped.append(Recipient(name: name, email: email, message: message, subject: messageSubject, fields: fields))
+          mapped.append(Recipient(name: name, email: email, emailCC: ccList,
+                                  emailRT: rtList, message: message,
+                                  subject: messageSubject, fields: fields, attachment: selectedDirPath + "/" + selectedAttachementsPath))
         }
 
         return mapped
@@ -525,6 +671,7 @@ private struct ImportView: View {
 }
 
 private struct ComposeView: View {
+    
     @Binding var recipients: [Recipient]
     let parsedHeaders: [String]
     let messageMode: MessageMode
@@ -532,8 +679,15 @@ private struct ComposeView: View {
     @Binding var emailSubject: String
     @Binding var ccList: String
     @Binding var replyMail: String
+    @Binding var attachedFileNames: String
+    @Binding var attachedDirPath: String
+    @State var appleScriptMode: Bool = false
+    @State private var showAutomationAlert = false
+
+    
     let onBack: () -> Void
     let onSend: () -> Void
+    let onCompose: () -> Void
     @State private var indexFirst50 = 0
     private var availableHeaders: [String] {
         let csvHeaderSet = Set(parsedHeaders)
@@ -574,30 +728,70 @@ private struct ComposeView: View {
                   }
               }
               Spacer()
+              // add switch to toggle mode
+            Toggle("AppleScript mode:", isOn: $appleScriptMode)
+                .toggleStyle(.switch)
+                .padding()
+                .onChange(of: appleScriptMode) { newValue in
+
+                    guard newValue else {
+                        return
+                    }
+
+                    checkMailAutomationPermission { authorized in
+
+                        if !authorized {
+                            appleScriptMode = false
+                            showAutomationAlert = true
+                        }
+                    }
+                }
+                .alert(
+                    "AppleScript access required",
+                    isPresented: $showAutomationAlert
+                ) {
+                    Button("OK", role: .cancel) { }
+                } message: {
+                    Text("""
+                    Please allow this application to control Mail in
+                    System Settings → Privacy & Security → Automation.
+                    """)
+                }
+                
           }
           .padding(.horizontal)
           
-          VStack(alignment: .leading, spacing: 8) {
-            HStack{
-              Text("Email Subject")
-                .font(.headline)
-              TextField("Subject", text: $emailSubject)
+        VStack(alignment: .leading, spacing: 8) {
+          HStack{
+            Text("Email Subject")
+              .font(.headline)
+            TextField("Subject", text: $emailSubject)
+              .textFieldStyle(.roundedBorder)
+              .onChange(of: emailSubject) { _ in
+                applyGlobalSubject()
+              }
+          }
+          HStack{  Text("CC (comma-separated)")
+              .font(.headline)
+            HStack{   TextField("email@example.com, email2@example.com", text: $ccList)
                 .textFieldStyle(.roundedBorder)
-                .onChange(of: emailSubject) { _ in
-                  applyGlobalSubject()
+                .onChange(of: ccList) { _ in
+                    applyGlobalCC()
                 }
             }
-            HStack{  Text("CC (comma-separated)")
-                .font(.headline)
-              HStack{   TextField("email@example.com, email2@example.com", text: $ccList)
-                  .textFieldStyle(.roundedBorder)
-              }
-            }
-            HStack{                Text("Reply to")
+          }
+          if !appleScriptMode {
+            HStack{
+              Text("Reply to")
                 .font(.headline)
               TextField("email@example.com, email2@example.com", text: $replyMail)
                 .textFieldStyle(.roundedBorder)
+                .onChange(of: replyMail) { _ in
+                  applyGlobalRT()
+                }
             }
+          }
+        
           }
           .padding(.horizontal)
           
@@ -611,6 +805,8 @@ private struct ComposeView: View {
                       .foregroundColor(.secondary)
                   TextEditor(text: $defaultMessage)
                       .frame(height: 140)
+                      .padding(8)
+
                       .border(Color.gray.opacity(0.5))
                       .onChange(of: defaultMessage) { _ in
                           applyGlobalMessage()
@@ -623,6 +819,47 @@ private struct ComposeView: View {
                       .font(.caption)
                       .foregroundColor(.secondary)
               }
+            VStack(alignment: .leading, spacing: 8) {
+              if appleScriptMode {
+                HStack {
+                  Text("Attachement file directory")
+                    .font(.headline)
+                  
+                  TextField("Sélectionner un répertoire…", text: $attachedDirPath)
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(true)
+                    .onChange(of: attachedDirPath) { _ in
+                      applyGlobalAttach()
+                    }
+                  Button {
+                    let panel = NSOpenPanel()
+                    panel.canChooseFiles = false
+                    panel.canChooseDirectories = true
+                    panel.allowsMultipleSelection = false
+                    panel.canCreateDirectories = true
+                    panel.prompt = "Sélectionner"
+                    if panel.runModal() == .OK,
+                       let url = panel.url {
+                      attachedDirPath = url.path
+                      // Important pour le Sandbox macOS
+                      _ = url.startAccessingSecurityScopedResource()
+                      applyGlobalSubject()
+                    }
+                  } label: {
+                    Image(systemName: "folder")
+                  }
+                  .help("Sélectionner le répertoire de l'attachement")
+                  Text("filename")
+                    .font(.headline)
+                  TextField("Filename", text: $attachedFileNames)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: attachedFileNames) { _ in
+                      applyGlobalAttach()
+                    }
+                  
+                }
+              }
+            }
           }
           .padding(.horizontal)
           
@@ -650,7 +887,7 @@ private struct ComposeView: View {
                         VStack(spacing: 10) {
                             ForEach($recipients) { $recipient in
                                 RecipientRow(
-                                    recipient: $recipient,
+                                  recipient: $recipient, appleScriptMode: $appleScriptMode,
                                     allowMessageEditing: messageMode == .perRecipient
                                 )
                             }
@@ -662,38 +899,74 @@ private struct ComposeView: View {
             }
             .padding(.bottom)
               // Send Button
-      Button(action: onSend) {
+      HStack{
+        Button(action: onCompose) {
           HStack {
-              Image(systemName: "envelope")
-              Text("Send Emails (\(recipients.filter { $0.selected }.count))")
+            Image(systemName: "square.and.pencil")
+            Text("Compose Emails (\(recipients.filter { $0.selected }.count))")
           }
           .frame(maxWidth: .infinity)
           .padding()
-        
-      }
-      .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
-      .foregroundColor(.white)
-      .cornerRadius(8)
-      .disabled(recipients.filter { $0.selected }.isEmpty)
-      .padding(.horizontal)
-        .onAppear {
-            if messageMode == .global {
-                applyGlobalMessage()
-            }
+          
         }
+        .background(recipients.filter { $0.selected }.isEmpty ? Color.gray : Color.green)
+          .foregroundColor(.white)
+          .cornerRadius(8)
+          .disabled(recipients.filter { $0.selected }.isEmpty)
+          .padding(.horizontal)
+            .onAppear {
+                if messageMode == .global {
+                    applyGlobalMessage()
+                }
+            }
+        Button(action: onSend) {
+            HStack {
+                Image(systemName: "envelope")
+                Text("Send Emails (\(recipients.filter { $0.selected }.count))")
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+          
+        }
+        .background(recipients.filter { $0.selected }.isEmpty || !appleScriptMode ? Color.gray : Color.green)
+        .foregroundColor(.white)
+        .cornerRadius(8)
+        .disabled(recipients.filter { $0.selected }.isEmpty || !appleScriptMode)
+        .padding(.horizontal)
+          .onAppear {
+              if messageMode == .global {
+                  applyGlobalMessage()
+              }
+          }
+      }
+      
     }
-
+   
     private func applyGlobalMessage() {
         for index in recipients.indices {
             recipients[index].message = defaultMessage
         }
     }
-   private func applyGlobalSubject() {
+  private func applyGlobalSubject() {
+     for index in recipients.indices {
+         recipients[index].subject = emailSubject
+     }
+ }
+  private func applyGlobalAttach() {
+     for index in recipients.indices {
+         recipients[index].attachment = attachedDirPath+"/"+attachedFileNames
+     }
+ }
+  private func applyGlobalCC() {
       for index in recipients.indices {
-          recipients[index].subject = emailSubject
+          recipients[index].emailCC = ccList
       }
   }
-
+  private func applyGlobalRT() {
+      for index in recipients.indices {
+          recipients[index].emailRT = replyMail
+      }
+  }
     private func setAllRecipientsSelected(_ isSelected: Bool) {
         for index in recipients.indices {
             recipients[index].selected = isSelected
@@ -714,16 +987,25 @@ private struct ComposeView: View {
 
 struct RecipientRow: View {
     @Binding var recipient: Recipient
+    @Binding var appleScriptMode: Bool
     let allowMessageEditing: Bool
     @State private var isExpanded = false
-
+    private var personalizedAttachmentFilePath: String {
+      EmailService().personalizeMessage(recipient.attachment, fields: recipient.fields)
+    }
     private var personalizedMessage: String {
         EmailService().personalizeMessage(recipient.message, fields: recipient.fields)
     }
     private var personalizedSubject: String {
       EmailService().personalizeMessage(recipient.subject, fields: recipient.fields)
     }
-    
+    private var personalizedCC: String {
+      EmailService().personalizeMessage(recipient.emailCC, fields: recipient.fields)
+    }
+    private var personalizedRT: String {
+      EmailService().personalizeMessage(recipient.emailRT, fields: recipient.fields)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -746,35 +1028,60 @@ struct RecipientRow: View {
             }
             
             if isExpanded {
-                VStack(alignment: .leading, spacing: 4) {
-                    if allowMessageEditing {
-                        Text("Template:")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-
-                        TextEditor(text: $recipient.message)
-                            .frame(height: 80)
-                            .border(Color.gray.opacity(0.5))
-                    }
-
-                    Text("Subject preview:")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                   Text(personalizedSubject)
-                      .frame(maxWidth: .infinity, alignment: .leading)
-                      .padding(8)
-                      .background(Color.gray.opacity(0.08))
-                      .cornerRadius(6)
-                  Text("Content preview:")
+              VStack(alignment: .leading, spacing: 4) {
+                if allowMessageEditing {
+                  Text("Template:")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                  
+                  TextEditor(text: $recipient.message)
+                    .frame(height: 80)
+                    .border(Color.gray.opacity(0.5))
+                }
+                HStack(alignment: .firstTextBaseline){
+                  Text("CC:")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                  Text(personalizedCC)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                if !appleScriptMode {
+                  HStack(alignment: .firstTextBaseline){
+                    Text("Reply To:")
                       .font(.caption)
                       .foregroundColor(.gray)
- 
-                  Text(personalizedMessage)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(8)
-                        .background(Color.gray.opacity(0.08))
-                        .cornerRadius(6)
+                    Text(personalizedRT)
+                      .frame(maxWidth: .infinity, alignment: .leading)
+                  }
                 }
+                  Text("Subject preview:")
+                  .font(.caption)
+                  .foregroundColor(.gray)
+                Text(personalizedSubject)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .padding(8)
+                  .background(Color.gray.opacity(0.08))
+                  .cornerRadius(6)
+                Text("Content preview:")
+                  .font(.caption)
+                  .foregroundColor(.gray)
+                
+                Text(personalizedMessage)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .padding(8)
+                  .background(Color.gray.opacity(0.08))
+                  .cornerRadius(6)
+                if appleScriptMode {
+                  Text("Attachment path:")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                  Text(personalizedAttachmentFilePath)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+                    .background(Color.gray.opacity(0.08))
+                    .cornerRadius(6)
+                }
+              }
             }
         }
         .padding()
@@ -785,5 +1092,6 @@ struct RecipientRow: View {
 
 #Preview {
     ContentView()
+    
 }
 

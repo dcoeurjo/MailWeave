@@ -2,34 +2,93 @@ import Foundation
 import AppKit
 
 class EmailService {
-    func sendEmails(to recipients: [Recipient], subject: String, cc: String, replyTo: String, completion: @escaping ([Bool]) -> Void) {
-        var results: [Bool] = []
-        
-        // Send emails asynchronously to avoid blocking the UI
+ 
+    func sendEmails(
+        to recipients: [Recipient],
+        subject: String,
+        cc: String,
+        replyTo: String,
+        completion: @escaping ([Bool]) -> Void,
+        progress: @escaping (Int, Int) -> Void,
+        composeOnly: Bool = true,
+        attachPath: String? = nil,
+        isCancelled: @escaping () -> Bool
+    ) {
+
         DispatchQueue.global(qos: .userInitiated).async {
-            for recipient in recipients {
-                let resolvedSubject = self.personalizeMessage(subject, fields: recipient.fields)
-                let resolvedCc = self.personalizeMessage(cc, fields: recipient.fields)
-                let body = self.personalizeMessage(recipient.message, fields: recipient.fields)
-                let success = self.createEmailInMailApp(
-                    to: recipient.email,
-                    cc: resolvedCc,
-                    replyTo: replyTo,
-                    subject: resolvedSubject,
-                    body: body
+
+            var results: [Bool] = []
+
+            let total = recipients.count
+
+            for (index, recipient) in recipients.enumerated() {
+                if isCancelled() {
+                    break
+                }
+                let resolvedSubject = self.personalizeMessage(
+                    subject,
+                    fields: recipient.fields
                 )
+
+                let resolvedCc = self.personalizeMessage(
+                    cc,
+                    fields: recipient.fields
+                )
+
+                let body = self.personalizeMessage(
+                    recipient.message,
+                    fields: recipient.fields
+                )
+
+                let path = self.personalizeMessage(
+                    recipient.attachment,
+                    fields: recipient.fields
+                )
+
+                let success: Bool
+
+                if composeOnly {
+
+                    success = self.createEmailInMailApp(
+                        to: recipient.email,
+                        cc: resolvedCc,
+                        replyTo: replyTo,
+                        subject: resolvedSubject,
+                        body: body
+                    )
+
+                } else {
+
+                    success = self.createAndSendEmailInMailApp(
+                        to: recipient.email,
+                        cc: resolvedCc,
+                        replyTo: replyTo,
+                        subject: resolvedSubject,
+                        body: body,
+                        attachmentPath: path
+                    )
+                }
+
                 results.append(success)
-                
-                // Small delay to prevent overwhelming the system
+
+                // Mise à jour de la progression sur le thread principal
+                let current = index + 1
+
+                DispatchQueue.main.async {
+                    progress(current, total)
+                }
+
+                // Petite pause entre deux mails
                 Thread.sleep(forTimeInterval: 0.5)
             }
-            
-            // Call completion handler on main thread
+
+            // Fin du traitement
             DispatchQueue.main.async {
                 completion(results)
             }
         }
     }
+
     
     func personalizeMessage(_ message: String, fields: [String: String]) -> String {
         let normalizedFields = normalizeFieldMap(fields)
@@ -132,5 +191,83 @@ class EmailService {
         
         return true
     }
+  
+  
+  private func createAndSendEmailInMailApp(to: String, cc: String, replyTo: String, subject: String,
+                                           body: String, attachmentPath: String?) -> Bool {
+      let toList = to
+          .replacingOccurrences(of: ";", with: ",")
+          .split(separator: ",")
+          .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+          .filter { !$0.isEmpty }
+
+      let ccList = cc
+          .replacingOccurrences(of: ";", with: ",")
+          .split(separator: ",")
+          .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+          .filter { !$0.isEmpty }
+
+      guard !toList.isEmpty else { return false }
+
+      func esc(_ s: String) -> String {
+          s.replacingOccurrences(of: "\\", with: "\\\\")
+           .replacingOccurrences(of: "\"", with: "\\\"")
+      }
+
+      // Convertit le corps Markdown en RTF hexadécimal
+   
+    
+      var script = """
+      tell application "Mail"
+          set newMessage to make new outgoing message with properties {subject:"\(esc(subject))", visible:true}
+          tell newMessage
+        set content to "\(esc(body))"
+      """
+
+      if let path = attachmentPath  {
+        script += """
+
+        tell content of newMessage
+            make new attachment with properties {file name:"\(path)"} at after the last paragraph
+        end tell
+        """
+    }
+    
+      for recipient in toList {
+          script += """
+
+              make new to recipient at end of to recipients with properties {address:"\(esc(recipient))"}
+          """
+      }
+
+      for recipient in ccList {
+          script += """
+
+              make new cc recipient at end of cc recipients with properties {address:"\(esc(recipient))"}
+          """
+      }
+
+    
+
+      script += """
+
+          end tell
+          delay 0.3
+          send newMessage
+      end tell
+      
+      """
+
+      var executionError: NSDictionary?
+      guard let appleScript = NSAppleScript(source: script) else { return false }
+
+      appleScript.executeAndReturnError(&executionError)
+     
+      if let error = executionError {
+          print("AppleScript error: \(error)")
+      }
+
+      return executionError == nil
+  }
 }
 
