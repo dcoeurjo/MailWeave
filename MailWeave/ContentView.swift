@@ -94,6 +94,12 @@ struct ContentView: View {
     @State private var importContentHeight: CGFloat = 0
     @State private var flowStep: FlowStep = .importStep
     
+    @State private var isSending = false
+    @State private var progress = 0
+    @State private var total = 0
+    @State private var isCancelled = false
+    @State private var currentRecipientName = ""
+    
     var body: some View {
         VStack(spacing: 20) {
             // Header
@@ -174,8 +180,39 @@ struct ContentView: View {
         } message: {
             Text(alertMessage)
         }
+        if isSending {
+            HStack(spacing: 12) {
+                ProgressView(
+                    value: Double(progress),
+                    total: Double(total)
+                )
+                .frame(width: 200)
+
+                HStack(spacing: 4) {
+                    Text("Sending \(progress) / \(total) to")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Text(currentRecipientName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                .frame(width: 280, alignment: .leading)
+
+                Button("Stop") {
+                    cancelSending()
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding(.horizontal)
+            .padding(8)
+        }
     }
-    
+    private func cancelSending() {
+        isCancelled = true
+    }
     func handleFileImport(_ result: Result<[URL], Error>) {
         do {
             guard let selectedFile = try result.get().first else { return }
@@ -223,50 +260,118 @@ struct ContentView: View {
        
 
     }
-    
+   
     func sendEmails() {
+
         let selectedRecipients = recipients.filter { $0.selected }
-        
-        if selectedRecipients.isEmpty {
+
+        guard !selectedRecipients.isEmpty else {
             alertMessage = "Please select at least one recipient"
             showAlert = true
             return
         }
-        
+
+        // Initialisation de la progression
+        isSending = true
+        progress = 0
+        isCancelled = false
+
+        total = selectedRecipients.count
+
         let emailService = EmailService()
-        emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replyMail, completion:  { results in
-            let successCount = results.filter { $0 }.count
-            let failureCount = results.count - successCount
-            if failureCount != 0 {
-                self.alertMessage = "Created \(successCount) emails. Failed: \(failureCount)"
-                self.showAlert = true
-            }
-        }, composeOnly: false, attachPath: selectedDirPath + "/" + selectedAttachementsPath)
+
+        emailService.sendEmails(
+            to: selectedRecipients,
+            subject: emailSubject,
+            cc: ccList,
+            replyTo: replyMail,
+
+            completion: { results in
+
+                let successCount = results.filter { $0 }.count
+                let failureCount = results.count - successCount
+
+                isSending = false
+
+                if failureCount != 0 {
+                    alertMessage =
+                        "Created \(successCount) emails. Failed: \(failureCount)"
+                    showAlert = true
+                } else {
+                    alertMessage =
+                        "Successfully sent \(successCount) emails."
+                    showAlert = true
+                }
+
+                print("Terminé : \(results.count) mails")
+            },
+
+            progress: { current, total in
+                self.currentRecipientName = recipients[current].name
+                self.progress = current
+                self.total = total
+            },
+
+            composeOnly: false,
+
+            attachPath: selectedDirPath + "/" + selectedAttachementsPath,
+            isCancelled: {self.isCancelled}
+        )
     }
 
-   
-  func composeEmails() {
-      let selectedRecipients = recipients.filter { $0.selected }
-      
-      if selectedRecipients.isEmpty {
-          alertMessage = "Please select at least one recipient"
-          showAlert = true
-          return
-      }
-      
-    
-      let emailService = EmailService()
-      emailService.sendEmails(to: selectedRecipients, subject: emailSubject, cc: ccList, replyTo: replyMail, completion:  { results in
-      let successCount = results.filter { $0 }.count
-      let failureCount = results.count - successCount
-      
-      if failureCount != 0 {
-        self.alertMessage = "Created \(successCount) emails. Failed: \(failureCount)"
-        self.showAlert = true
-      }
 
-    }, composeOnly: true)
-  }
+   
+    func composeEmails() {
+
+        let selectedRecipients = recipients.filter { $0.selected }
+
+        guard !selectedRecipients.isEmpty else {
+            alertMessage = "Please select at least one recipient"
+            showAlert = true
+            return
+        }
+
+        // Initialisation de la progression
+        isSending = true
+        progress = 0
+        isCancelled = false
+
+        total = selectedRecipients.count
+
+        let emailService = EmailService()
+
+        emailService.sendEmails(
+            to: selectedRecipients,
+            subject: emailSubject,
+            cc: ccList,
+            replyTo: replyMail,
+
+            completion: { results in
+
+                let successCount = results.filter { $0 }.count
+                let failureCount = results.count - successCount
+
+                isSending = false
+
+                if failureCount != 0 {
+                    alertMessage =
+                        "Created \(successCount) emails. Failed: \(failureCount)"
+                    showAlert = true
+                }
+
+                print("Terminé : \(results.count) mails")
+            },
+
+            progress: { current, total in
+
+                self.progress = current
+                self.total = total
+            },
+
+            composeOnly: true,
+            isCancelled: {self.isCancelled}
+        )
+    }
 
   private var canProceedToCompose: Bool {
       !importedRows.isEmpty &&
@@ -576,10 +681,10 @@ private struct ComposeView: View {
     @Binding var replyMail: String
     @Binding var attachedFileNames: String
     @Binding var attachedDirPath: String
-
     @State var appleScriptMode: Bool = false
     @State private var showAutomationAlert = false
 
+    
     let onBack: () -> Void
     let onSend: () -> Void
     let onCompose: () -> Void
@@ -836,7 +941,7 @@ private struct ComposeView: View {
       }
       
     }
-
+   
     private func applyGlobalMessage() {
         for index in recipients.indices {
             recipients[index].message = defaultMessage
